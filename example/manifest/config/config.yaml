@@ -1,0 +1,18 @@
+server:
+  address: ":8000"
+
+database:
+  default:
+    # 连接池配置
+    maxOpenConns: 25
+    maxIdleConns: 5
+    connMaxLifetime: "1h"
+    connMaxIdleTime: "30m"
+    # 数据库连接 DSN
+    dsn: "postgres://postgres:your_password@127.0.0.1:5432/test?sslmode=disable"
+    # 从库 DSN 列表（可选，支持多个从库读写分离）
+    # slave:
+    #   - "postgres://postgres:password@127.0.0.1:5433/dbname?sslmode=disable"
+
+logger:
+  level: "info"

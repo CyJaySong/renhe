@@ -2,6 +2,7 @@ package rhttp
 
 import (
 	"fmt"
+	"github.com/labstack/echo/v4"
 	"log"
 	"net/http"
 	"reflect"
@@ -26,7 +27,7 @@ var allowMethod = map[string]struct{}{
 }
 
 // EchoRegisterCtrlPointers 接受一个echo引擎或者echo路由组，和多个ctrl指针对象，判断各ctrl指针对象的所有函数，是否可用于注册
-func echo[T *echo.Echo | *echo.Group](echoOrGroup T, ctrlPointers ...any) {
+func EchoRegisterCtrlPointers[T *echo.Echo | *echo.Group](echoOrGroup T, ctrlPointers ...any) {
 	for _, ctrl := range ctrlPointers {
 		ctrlType := reflect.TypeOf(ctrl)
 		if ctrlType.Kind() != reflect.Pointer || ctrlType.Elem().Kind() != reflect.Struct {
@@ -120,6 +121,10 @@ func echoHandler(funcType reflect.Type, funcItem reflect.Value) echo.HandlerFunc
 	return func(ctx echo.Context) (err error) {
 		bizReq := reflect.New(funcType.In(1).Elem())
 		if err = ctx.Bind(bizReq.Interface()); err != nil {
+			return err
+		}
+		// 校验入参
+		if err = ctx.Validate(bizReq.Interface()); err != nil {
 			return err
 		}
 		// 构建入参
