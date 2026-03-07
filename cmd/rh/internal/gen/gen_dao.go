@@ -12,17 +12,25 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// TypeMappingItem 类型映射配置项。
+type TypeMappingItem struct {
+	Type   string // Go 类型名，如 decimal.Decimal
+	Import string // 需要导入的包路径
+}
+
 type DaoConfig struct {
-	DSN        string
-	Schema     string
-	Tables     string
-	TablesEx   string
-	Path       string
-	TablePath  string
-	DoPath     string
-	EntityPath string
-	JsonCase   string
-	Module     string
+	DSN          string
+	Schema       string
+	Tables       string
+	TablesEx     string
+	Path         string
+	TablePath    string
+	DoPath       string
+	EntityPath   string
+	JsonCase     string
+	Module       string
+	TypeMapping  map[string]TypeMappingItem // 按数据库类型名全局映射
+	FieldMapping map[string]TypeMappingItem // 按 表名.字段名 精确映射
 }
 
 type columnInfo struct {
@@ -91,7 +99,7 @@ func RunDao(cfg DaoConfig) error {
 		fmt.Printf("  generated: %s (do)\n", doFile)
 
 		// Generate entity
-		entityCode := generateEntityCode(table, cols, filepath.Base(cfg.EntityPath), cfg.JsonCase)
+		entityCode := generateEntityCode(table, cols, filepath.Base(cfg.EntityPath), cfg.JsonCase, cfg.TypeMapping, cfg.FieldMapping)
 		entityFile := filepath.Join(entityDir, table+".go")
 		if err := writeFormatted(entityFile, entityCode); err != nil {
 			return fmt.Errorf("failed to write %s: %w", entityFile, err)

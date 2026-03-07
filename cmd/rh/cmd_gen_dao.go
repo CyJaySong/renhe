@@ -35,6 +35,19 @@ Configuration (hack/config.yaml):
           doPath:       DO sub-path relative to path (default: "model/do")
           entityPath:   Entity sub-path relative to path (default: "model/ent")
           jsonCase:     JSON tag naming: Snake / CamelLower / Camel (default: "Snake")
+          typeMapping:  Map DB column types to custom Go types globally.
+                        Each key is a DB type name (e.g. numeric, jsonb).
+                        Value has "type" (Go type) and optional "import" (package path).
+                        Example:
+                          numeric:
+                            type: "decimal.Decimal"
+                            import: "github.com/shopspring/decimal"
+          fieldMapping: Map specific table.column to custom Go types (higher priority than typeMapping).
+                        Each key is "table_name.column_name".
+                        Value has "type" (Go type) and optional "import" (package path).
+                        Example:
+                          user.other:
+                            type: "map[string]any"
 
 Multiple database configurations are supported as a YAML list.`,
 	RunE: runGenDao,
@@ -84,6 +97,19 @@ func runGenDao(cmd *cobra.Command, args []string) error {
 			EntityPath: dc.EntityPath,
 			JsonCase:   dc.JsonCase,
 			Module:     module,
+		}
+		// 转换 config.TypeMappingItem → gen.TypeMappingItem
+		if len(dc.TypeMapping) > 0 {
+			genCfg.TypeMapping = make(map[string]gen.TypeMappingItem, len(dc.TypeMapping))
+			for k, v := range dc.TypeMapping {
+				genCfg.TypeMapping[k] = gen.TypeMappingItem{Type: v.Type, Import: v.Import}
+			}
+		}
+		if len(dc.FieldMapping) > 0 {
+			genCfg.FieldMapping = make(map[string]gen.TypeMappingItem, len(dc.FieldMapping))
+			for k, v := range dc.FieldMapping {
+				genCfg.FieldMapping[k] = gen.TypeMappingItem{Type: v.Type, Import: v.Import}
+			}
 		}
 
 		fmt.Printf("=== Processing config[%d] ===\n", i)

@@ -27,16 +27,24 @@ type GenServiceConfig struct {
 	DstPath string `yaml:"dstPath"`
 }
 
+// TypeMappingItem 类型映射项，配置数据库字段类型或具体字段对应的 Go 类型。
+type TypeMappingItem struct {
+	Type   string `yaml:"type"`   // Go 类型名，如 decimal.Decimal
+	Import string `yaml:"import"` // 需要导入的包路径，如 github.com/shopspring/decimal
+}
+
 type GenDaoConfig struct {
-	Link       string `yaml:"link"`
-	Tables     string `yaml:"tables"`
-	TablesEx   string `yaml:"tablesEx"`
-	Schema     string `yaml:"schema"`
-	Path       string `yaml:"path"`
-	TablePath  string `yaml:"tablePath"`
-	DoPath     string `yaml:"doPath"`
-	EntityPath string `yaml:"entityPath"`
-	JsonCase   string `yaml:"jsonCase"`
+	Link         string                     `yaml:"link"`
+	Tables       string                     `yaml:"tables"`
+	TablesEx     string                     `yaml:"tablesEx"`
+	Schema       string                     `yaml:"schema"`
+	Path         string                     `yaml:"path"`
+	TablePath    string                     `yaml:"tablePath"`
+	DoPath       string                     `yaml:"doPath"`
+	EntityPath   string                     `yaml:"entityPath"`
+	JsonCase     string                     `yaml:"jsonCase"`
+	TypeMapping  map[string]TypeMappingItem `yaml:"typeMapping"`  // 按数据库类型名全局映射，如 numeric → decimal.Decimal
+	FieldMapping map[string]TypeMappingItem `yaml:"fieldMapping"` // 按 表名.字段名 精确映射，优先级高于 typeMapping
 }
 
 func Load(path string) (*Config, error) {

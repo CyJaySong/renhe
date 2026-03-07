@@ -15,6 +15,9 @@ import (
 {{- end}}
 
 	"github.com/uptrace/bun"
+{{- range .ExtraImports}}
+	"{{.}}"
+{{- end}}
 )
 
 // {{.StructName}} is the entity for table {{.TableName}}.

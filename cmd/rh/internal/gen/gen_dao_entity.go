@@ -8,13 +8,14 @@ import (
 )
 
 type entityData struct {
-	Pkg        string
-	StructName string
-	TableName  string
-	NeedsTime  bool
-	NeedsBun   bool
-	NeedsJSON  bool
-	Fields     []entityField
+	Pkg          string
+	StructName   string
+	TableName    string
+	NeedsTime    bool
+	NeedsBun     bool
+	NeedsJSON    bool
+	ExtraImports []string // 自定义 import 路径（来自 typeMapping/fieldMapping）
+	Fields       []entityField
 }
 
 type entityField struct {
@@ -25,7 +26,7 @@ type entityField struct {
 	Comment string
 }
 
-func generateEntityCode(table string, columns []columnInfo, pkg, jsonCase string) string {
+func generateEntityCode(table string, columns []columnInfo, pkg, jsonCase string, typeMapping, fieldMapping map[string]TypeMappingItem) string {
 	data := entityData{
 		Pkg:        pkg,
 		StructName: ToPascalCase(table),
@@ -33,13 +34,18 @@ func generateEntityCode(table string, columns []columnInfo, pkg, jsonCase string
 		NeedsBun:   true,
 	}
 
+	extraImportSet := make(map[string]struct{})
+
 	for _, c := range columns {
-		goType := pgTypeToGo(c)
+		goType, importPath := resolveGoType(table, c, typeMapping, fieldMapping)
 		if goType == "time.Time" || goType == "*time.Time" {
 			data.NeedsTime = true
 		}
 		if goType == "json.RawMessage" {
 			data.NeedsJSON = true
+		}
+		if importPath != "" {
+			extraImportSet[importPath] = struct{}{}
 		}
 
 		bunTag := buildBunTag(c)
@@ -58,10 +64,35 @@ func generateEntityCode(table string, columns []columnInfo, pkg, jsonCase string
 		})
 	}
 
+	for imp := range extraImportSet {
+		data.ExtraImports = append(data.ExtraImports, imp)
+	}
+
 	var buf bytes.Buffer
 	t := template.Must(template.New("entity").Parse(entityTpl))
 	_ = t.Execute(&buf, data)
 	return buf.String()
+}
+
+// resolveGoType 解析字段的 Go 类型，优先级：fieldMapping > typeMapping > 默认推导。
+func resolveGoType(table string, c columnInfo, typeMapping, fieldMapping map[string]TypeMappingItem) (goType, importPath string) {
+	// 1. fieldMapping: 表名.字段名 精确匹配
+	if fieldMapping != nil {
+		key := table + "." + c.Name
+		if m, ok := fieldMapping[key]; ok {
+			return m.Type, m.Import
+		}
+	}
+	// 2. typeMapping: 按数据库类型名匹配（同时检查 data_type 和 udt_name）
+	if typeMapping != nil {
+		for _, typeName := range []string{strings.ToLower(c.DataType), strings.ToLower(c.UdtName)} {
+			if m, ok := typeMapping[typeName]; ok {
+				return m.Type, m.Import
+			}
+		}
+	}
+	// 3. 默认推导
+	return pgTypeToGo(c), ""
 }
 
 // buildBunTag 根据列元信息生成 bun struct tag 值。
