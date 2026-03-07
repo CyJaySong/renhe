@@ -1,3 +1,4 @@
+// Package rhttp 提供 HTTP 服务器封装，基于 echo 框架，集成配置加载、验证器和日志。
 package rhttp
 
 import (
@@ -6,10 +7,12 @@ import (
 	"github.com/cyjaysong/renhe/os/rcfg"
 )
 
+// Config HTTP 服务器配置。
 type Config struct {
 	Address string `yaml:"address"`
 }
 
+// loadConfig 从全局配置 httpSrv 下读取 HTTP 服务器配置并反序列化。
 func loadConfig() (cfg Config, err error) {
 	key := "httpSrv"
 	allCfg := rcfg.Cfg()

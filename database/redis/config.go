@@ -1,3 +1,4 @@
+// Package redis 提供 Redis 客户端封装，支持单机和集群模式，基于 go-redis/v9 UniversalClient 实现。
 package redis
 
 import (
@@ -7,6 +8,7 @@ import (
 	"github.com/cyjaysong/renhe/os/rcfg"
 )
 
+// Config Redis 连接配置。
 type Config struct {
 	// 地址列表: 单机模式填1个, 集群模式填多个种子节点
 	Address  []string `yaml:"address"`
@@ -26,6 +28,7 @@ type Config struct {
 	WriteTimeout time.Duration `yaml:"writeTimeout"` // TCP写超时
 }
 
+// loadConfig 从全局配置中读取 redis.<name> 下的 Redis 配置并反序列化。
 func loadConfig(name string) (cfg Config, err error) {
 	key := "redis." + name
 	allCfg := rcfg.Cfg()

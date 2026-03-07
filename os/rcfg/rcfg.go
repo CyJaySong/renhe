@@ -1,3 +1,5 @@
+// Package rcfg 提供全局配置管理，基于 viper 实现 YAML 配置文件的读取与解析。
+// 配置文件按以下优先级搜索：manifest/config > manifest > config > 当前目录。
 package rcfg
 
 import (
@@ -19,6 +21,9 @@ var (
 	once     sync.Once
 )
 
+// Cfg 返回全局 viper 实例（单例）。
+// 可传入路径片段获取子配置，例如 Cfg("database", "default") 等价于 viper.Sub("database.default")。
+// 首次调用时自动读取配置文件，读取失败将 Fatal。
 func Cfg(paths ...string) *viper.Viper {
 	once.Do(func() {
 		v := viper.New()

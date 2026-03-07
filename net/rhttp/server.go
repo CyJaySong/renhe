@@ -8,11 +8,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// HttpSrv HTTP 服务器，内嵌 echo.Echo 并携带配置。
 type HttpSrv struct {
 	Cfg Config
 	*echo.Echo
 }
 
+// New 创建 HttpSrv 实例，加载配置并初始化 echo 引擎、验证器和日志。
 func New() *HttpSrv {
 	cfg, err := loadConfig()
 	if err != nil {

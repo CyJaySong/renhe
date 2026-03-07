@@ -10,6 +10,8 @@ var (
 	mu        sync.RWMutex
 )
 
+// Database 返回指定名称的数据库单例（双检锁）。
+// 不传参或传空字符串时使用 "default"。首次调用时自动加载配置并创建实例。
 func Database(name ...string) *DB {
 	n := "default"
 	if len(name) > 0 && name[0] != "" {

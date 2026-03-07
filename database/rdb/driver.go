@@ -2,9 +2,11 @@ package rdb
 
 import (
 	"database/sql"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// openSqlDB 使用 pgx 驱动打开 SQL 连接并应用连接池配置。
 func openSqlDB(dsn string, p poolConfig) (sqlDb *sql.DB, err error) {
 	if sqlDb, err = sql.Open("pgx", dsn); err != nil {
 		return

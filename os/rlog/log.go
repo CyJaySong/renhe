@@ -1,3 +1,5 @@
+// Package rlog 提供全局日志服务，基于 gookit/slog 实现。
+// 支持上下文字段注入、OpenTelemetry Trace 自动关联，并提供 echo.Logger 和 bun.QueryHook 适配器。
 package rlog
 
 import (
@@ -15,10 +17,12 @@ var (
 	once     sync.Once
 )
 
+// Logger 封装 gookit/slog.Logger，提供带 context 的日志方法。
 type Logger struct {
 	logger *slog.Logger
 }
 
+// Log 返回全局 Logger 单例。首次调用时根据配置初始化日志级别和 Handler。
 func Log() *Logger {
 	once.Do(func() {
 		level := loadLevel()
@@ -30,6 +34,7 @@ func Log() *Logger {
 	return instance
 }
 
+// loadLevel 从全局配置 logger.level 读取日志级别，默认 InfoLevel。
 func loadLevel() slog.Level {
 	v := rcfg.Cfg()
 	key := "logger.level"
