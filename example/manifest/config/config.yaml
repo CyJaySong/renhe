@@ -1,4 +1,4 @@
-server:
+httpSrv:
   address: ":8000"
 
 database:
@@ -13,6 +13,21 @@ database:
     # 从库 DSN 列表（可选，支持多个从库读写分离）
     # slave:
     #   - "postgres://postgres:password@127.0.0.1:5433/dbname?sslmode=disable"
+
+redis:
+  default:
+    addr: "127.0.0.1:6379"
+    db: 0
+    # username: ""
+    # password: ""
+    # minIdle: 10
+    # maxIdle: 50
+    # maxActive: 200
+    # idleTimeout: "5m"
+    # maxConnLifetime: "1h"
+    # dialTimeout: "5s"
+    # readTimeout: "3s"
+    # writeTimeout: "3s"
 
 logger:
   level: "info"

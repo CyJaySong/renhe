@@ -2,10 +2,10 @@ package r
 
 import (
 	"github.com/cyjaysong/renhe/database/rdb"
+	"github.com/cyjaysong/renhe/database/redis"
+	"github.com/cyjaysong/renhe/net/rhttp"
 	"github.com/cyjaysong/renhe/os/rcfg"
 	"github.com/cyjaysong/renhe/os/rlog"
-	"github.com/cyjaysong/renhe/util/rvalid"
-	"github.com/labstack/echo/v4"
 	"github.com/spf13/viper"
 )
 
@@ -16,20 +16,22 @@ func parseName(name []string) string {
 	return "default"
 }
 
-func HttpSrv() *echo.Echo {
-	httpEngine := echo.New()
-	httpEngine.Validator = rvalid.Instance()
-	return httpEngine
+func HttpSrv() *rhttp.HttpSrv {
+	return rhttp.New()
 }
 
-func Cfg(name ...string) *viper.Viper {
-	return rcfg.Instance(parseName(name))
+func Cfg(paths ...string) *viper.Viper {
+	return rcfg.Cfg(paths...)
 }
 
-func Log(name ...string) *rlog.Logger {
-	return rlog.Instance(parseName(name))
+func Log() *rlog.Logger {
+	return rlog.Log()
 }
 
 func DB(name ...string) *rdb.DB {
-	return rdb.Instance(parseName(name))
+	return rdb.Database(parseName(name))
+}
+
+func Redis(name ...string) *redis.Redis {
+	return redis.Instance(parseName(name))
 }

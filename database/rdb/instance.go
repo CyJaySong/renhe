@@ -1,0 +1,43 @@
+package rdb
+
+import (
+	"fmt"
+	"sync"
+)
+
+var (
+	instances = make(map[string]*DB)
+	mu        sync.RWMutex
+)
+
+func Database(name ...string) *DB {
+	n := "default"
+	if len(name) > 0 && name[0] != "" {
+		n = name[0]
+	}
+
+	mu.RLock()
+	if d, ok := instances[n]; ok {
+		mu.RUnlock()
+		return d
+	}
+	mu.RUnlock()
+
+	mu.Lock()
+	defer mu.Unlock()
+	if d, ok := instances[n]; ok {
+		return d
+	}
+	cfg, err := loadConfig(n)
+	if err != nil {
+		fmt.Printf("rdb: %v\n", err)
+		return nil
+	}
+	d, err := newDB(n, cfg)
+	if err != nil {
+		fmt.Printf("rdb: failed to create instance %q: %v\n", n, err)
+		return nil
+	}
+	instances[n] = d
+	return d
+}

@@ -2,10 +2,24 @@ package rdb
 
 import (
 	"database/sql"
-
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func openSqlDB(dsn string) (*sql.DB, error) {
-	return sql.Open("pgx", dsn)
+func openSqlDB(dsn string, p poolConfig) (sqlDb *sql.DB, err error) {
+	if sqlDb, err = sql.Open("pgx", dsn); err != nil {
+		return
+	}
+	if p.MaxOpenConns > 0 {
+		sqlDb.SetMaxOpenConns(p.MaxOpenConns)
+	}
+	if p.MaxIdleConns > 0 {
+		sqlDb.SetMaxIdleConns(p.MaxIdleConns)
+	}
+	if p.ConnMaxLifetime > 0 {
+		sqlDb.SetConnMaxLifetime(p.ConnMaxLifetime)
+	}
+	if p.ConnMaxIdleTime > 0 {
+		sqlDb.SetConnMaxIdleTime(p.ConnMaxIdleTime)
+	}
+	return
 }

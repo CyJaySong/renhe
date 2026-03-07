@@ -23,7 +23,7 @@ type UserListRes struct {
 
 func (u *User) List(ctx echo.Context, req *UserListReq) (*UserListRes, error) {
 	var users []ent.User
-	db := rdb.Instance()
+	db := rdb.Database()
 	err := db.NewSelect(ctx.Request().Context()).Model(&users).Scan(ctx.Request().Context())
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -42,7 +42,7 @@ type UserGetRes struct {
 
 func (u *User) Get(ctx echo.Context, req *UserGetReq) (*UserGetRes, error) {
 	var user ent.User
-	db := rdb.Instance()
+	db := rdb.Database()
 	err := db.NewSelect(ctx.Request().Context()).Model(&user).Where("id = ?", req.Id).Scan(ctx.Request().Context())
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, "user not found")
@@ -65,7 +65,7 @@ func (u *User) Create(ctx echo.Context, req *UserCreateReq) (*UserCreateRes, err
 		Phone:    req.Phone,
 		Nickname: req.Nickname,
 	}
-	db := rdb.Instance()
+	db := rdb.Database()
 	_, err := db.NewInsert(ctx.Request().Context()).Model(&user).Exec(ctx.Request().Context())
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -84,7 +84,7 @@ type UserTxRes struct {
 }
 
 func (u *User) TxDemo(ctx echo.Context, req *UserTxReq) (*UserTxRes, error) {
-	db := rdb.Instance()
+	db := rdb.Database()
 	var user ent.User
 
 	err := db.RunInTx(ctx.Request().Context(), nil, func(txCtx context.Context) error {

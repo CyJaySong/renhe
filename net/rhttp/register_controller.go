@@ -121,11 +121,11 @@ func echoHandler(funcType reflect.Type, funcItem reflect.Value) echo.HandlerFunc
 	return func(ctx echo.Context) (err error) {
 		bizReq := reflect.New(funcType.In(1).Elem())
 		if err = ctx.Bind(bizReq.Interface()); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		// 校验入参
 		if err = ctx.Validate(bizReq.Interface()); err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		// 构建入参
 		inParams := []reflect.Value{reflect.ValueOf(ctx), bizReq}
