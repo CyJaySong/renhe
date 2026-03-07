@@ -32,4 +32,16 @@ redis:
     # writeTimeout: "3s"
 
 logger:
-  level: "info"
+  level: "info"            # trace/debug/info/notice/warn/error/fatal
+  format: "text"           # text/json
+  output: "console"        # console/file/both
+  callerSkip: 7            # 调用栈跳过层数
+  stack: false             # Error/Warn/Fatal 级别是否追加完整调用栈
+  # file:                  # output 包含 file 时生效
+  #   path: "logs/app.log" # 日志文件路径
+  #   maxSize: 128         # 单文件最大 MB
+  #   rotateTime: "every_day"  # every_hour/every_day/every_30min/every_15min
+  #   backupNum: 20        # 保留旧文件数量
+  #   backupTime: 168      # 保留旧文件最大小时数（168=7天）
+  #   compress: false      # 是否 gzip 压缩
+  #   buffSize: 8192       # 写缓冲字节数，0 禁用

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/gookit/slog"
 	"github.com/uptrace/bun"
 )
 
@@ -29,20 +30,30 @@ func (h *bunQueryHook) BeforeQuery(ctx context.Context, _ *bun.QueryEvent) conte
 }
 
 func (h *bunQueryHook) AfterQuery(ctx context.Context, event *bun.QueryEvent) {
-	duration := time.Since(event.StartTime)
+	dur := time.Since(event.StartTime)
 
 	if event.Err != nil && !errors.Is(event.Err, sql.ErrNoRows) {
-		h.l.withCtx(ctx).
-			Error("[BUN]", event.Operation(), event.Query, "err", event.Err, "duration", duration.String())
+		h.l.withCtx(ctx).WithData(slog.M{
+			"op":       event.Operation(),
+			"query":    event.Query,
+			"err":      event.Err.Error(),
+			"duration": dur.String(),
+		}).Error("[BUN]")
 		return
 	}
 
-	if h.slowQueryThreshold > 0 && duration >= h.slowQueryThreshold {
-		h.l.withCtx(ctx).
-			Warn("[BUN-SLOW]", event.Operation(), event.Query, "duration", duration.String())
+	if h.slowQueryThreshold > 0 && dur >= h.slowQueryThreshold {
+		h.l.withCtx(ctx).WithData(slog.M{
+			"op":       event.Operation(),
+			"query":    event.Query,
+			"duration": dur.String(),
+		}).Warn("[BUN-SLOW]")
 		return
 	}
 
-	h.l.withCtx(ctx).
-		Debug("[BUN]", event.Operation(), event.Query, "duration", duration.String())
+	h.l.withCtx(ctx).WithData(slog.M{
+		"op":       event.Operation(),
+		"query":    event.Query,
+		"duration": dur.String(),
+	}).Debug("[BUN]")
 }

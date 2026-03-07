@@ -10,9 +10,9 @@ var (
 	mu        sync.RWMutex
 )
 
-// Instance 返回指定名称的 Redis 单例（双检锁）。
+// Database 返回指定名称的 Redis 单例（双检锁）。
 // 不传参或传空字符串时使用 "default"。首次调用时自动加载配置并创建实例。
-func Instance(name ...string) *Redis {
+func Database(name ...string) *Redis {
 	n := "default"
 	if len(name) > 0 && name[0] != "" {
 		n = name[0]

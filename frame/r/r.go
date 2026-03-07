@@ -41,5 +41,5 @@ func DB(name ...string) *rdb.DB {
 
 // Redis 返回指定名称的 Redis 单例，默认 "default"。
 func Redis(name ...string) *redis.Redis {
-	return redis.Instance(parseName(name))
+	return redis.Database(parseName(name))
 }
