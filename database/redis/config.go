@@ -8,19 +8,22 @@ import (
 )
 
 type Config struct {
-	Addr            string        `yaml:"addr"`            // Redis地址
-	DB              int           `yaml:"db"`              // 数据库索引
-	Username        string        `yaml:"username"`        // 访问授权用户
-	Password        string        `yaml:"password"`        // 访问授权密码
-	MinIdle         int           `yaml:"minIdle"`         // 允许闲置的最小连接数
-	MaxIdle         int           `yaml:"maxIdle"`         // 允许闲置的最大连接数(0表示不限制)
-	MaxActive       int           `yaml:"maxActive"`       // 最大连接数量限制(0表示不限制)
-	IdleTimeout     time.Duration `yaml:"idleTimeout"`     // 连接最大空闲时间
-	MaxConnLifetime time.Duration `yaml:"maxConnLifetime"` // 连接最长存活时间
-	DialTimeout     time.Duration `yaml:"dialTimeout"`     // TCP连接的超时时间
-	ReadTimeout     time.Duration `yaml:"readTimeout"`     // TCP的Read操作超时时间
-	WriteTimeout    time.Duration `yaml:"writeTimeout"`    // TCP的Write操作超时时间
-	WaitTimeout     time.Duration `yaml:"waitTimeout"`     // 等待连接池连接的超时时间
+	// 地址列表: 单机模式填1个, 集群模式填多个种子节点
+	Address  []string `yaml:"address"`
+	DB       int      `yaml:"db"`       // 数据库索引(仅单机模式)
+	Username string   `yaml:"username"` // 访问授权用户
+	Password string   `yaml:"password"` // 访问授权密码
+	// 连接池
+	MinIdleConns    int           `yaml:"minIdleConns"`    // 最小空闲连接数
+	MaxIdleConns    int           `yaml:"maxIdleConns"`    // 最大空闲连接数
+	PoolSize        int           `yaml:"poolSize"`        // 连接池大小
+	ConnMaxIdleTime time.Duration `yaml:"connMaxIdleTime"` // 连接最大空闲时间
+	ConnMaxLifetime time.Duration `yaml:"connMaxLifetime"` // 连接最长存活时间
+	PoolTimeout     time.Duration `yaml:"poolTimeout"`     // 等待连接池连接的超时时间
+	// 超时
+	DialTimeout  time.Duration `yaml:"dialTimeout"`  // TCP连接超时
+	ReadTimeout  time.Duration `yaml:"readTimeout"`  // TCP读超时
+	WriteTimeout time.Duration `yaml:"writeTimeout"` // TCP写超时
 }
 
 func loadConfig(name string) (cfg Config, err error) {
@@ -36,7 +39,7 @@ func loadConfig(name string) (cfg Config, err error) {
 	if err = sub.Unmarshal(&cfg, rcfg.YamlTagOption); err != nil {
 		return Config{}, fmt.Errorf("config `%s`: unmarshal failed: %w", key, err)
 	}
-	if cfg.Addr == "" {
+	if len(cfg.Address) == 0 {
 		return Config{}, fmt.Errorf("config `%s`: address is required", key)
 	}
 	return
