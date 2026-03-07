@@ -5,15 +5,17 @@ const entityTpl = `// ==========================================================
 // ==========================================================================
 
 package {{.Pkg}}
-{{if or .NeedsTime .NeedsBun}}
+
 import (
+{{- if .NeedsJSON}}
+	"encoding/json"
+{{- end}}
 {{- if .NeedsTime}}
 	"time"
 {{- end}}
 
 	"github.com/uptrace/bun"
 )
-{{end}}
 
 // {{.StructName}} is the entity for table {{.TableName}}.
 type {{.StructName}} struct {

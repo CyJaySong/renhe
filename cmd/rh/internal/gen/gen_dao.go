@@ -26,13 +26,18 @@ type DaoConfig struct {
 }
 
 type columnInfo struct {
-	Name       string
-	DataType   string
-	UdtName    string
-	IsNullable string
-	IsPrimary  bool
-	HasDefault bool
-	Comment    string
+	Name             string
+	DataType         string
+	UdtName          string
+	IsNullable       string
+	IsPrimary        bool
+	HasDefault       bool
+	DefaultValue     string // 原始默认值表达式
+	Comment          string
+	MaxLength        int    // character_maximum_length
+	NumericPrecision int    // numeric_precision
+	NumericScale     int    // numeric_scale
+	ElementType      string // 数组元素的 udt_name（仅 ARRAY 类型）
 }
 
 func RunDao(cfg DaoConfig) error {
@@ -226,6 +231,7 @@ SELECT
 	c.udt_name,
 	c.is_nullable,
 	COALESCE(c.column_default, '') != '' AS has_default,
+	COALESCE(c.column_default, '') AS default_value,
 	COALESCE(
 		(SELECT true FROM information_schema.table_constraints tc
 		 JOIN information_schema.key_column_usage kcu
@@ -238,12 +244,22 @@ SELECT
 		 LIMIT 1),
 		false
 	) AS is_primary,
-	COALESCE(pgd.description, '') AS comment
+	COALESCE(pgd.description, '') AS comment,
+	COALESCE(c.character_maximum_length, 0) AS max_length,
+	COALESCE(c.numeric_precision, 0) AS numeric_precision,
+	COALESCE(c.numeric_scale, 0) AS numeric_scale,
+	COALESCE(e.udt_name, '') AS element_type
 FROM information_schema.columns c
 LEFT JOIN pg_catalog.pg_statio_all_tables st
 	ON st.schemaname = c.table_schema AND st.relname = c.table_name
 LEFT JOIN pg_catalog.pg_description pgd
 	ON pgd.objoid = st.relid AND pgd.objsubid = c.ordinal_position
+LEFT JOIN information_schema.element_types e
+	ON e.object_catalog = c.table_catalog
+	AND e.object_schema = c.table_schema
+	AND e.object_name = c.table_name
+	AND e.object_type = 'TABLE'
+	AND e.collection_type_identifier = c.dtd_identifier
 WHERE c.table_schema = $1 AND c.table_name = $2
 ORDER BY c.ordinal_position`
 
@@ -256,7 +272,11 @@ ORDER BY c.ordinal_position`
 	var columns []columnInfo
 	for rows.Next() {
 		var c columnInfo
-		if err := rows.Scan(&c.Name, &c.DataType, &c.UdtName, &c.IsNullable, &c.HasDefault, &c.IsPrimary, &c.Comment); err != nil {
+		if err := rows.Scan(
+			&c.Name, &c.DataType, &c.UdtName, &c.IsNullable,
+			&c.HasDefault, &c.DefaultValue, &c.IsPrimary, &c.Comment,
+			&c.MaxLength, &c.NumericPrecision, &c.NumericScale, &c.ElementType,
+		); err != nil {
 			return nil, err
 		}
 		columns = append(columns, c)
@@ -264,9 +284,10 @@ ORDER BY c.ordinal_position`
 	return columns, nil
 }
 
-func pgTypeToGo(dataType, udtName string, nullable bool) string {
+func pgTypeToGo(c columnInfo) string {
+	nullable := c.IsNullable == "YES"
 	var goType string
-	switch strings.ToLower(dataType) {
+	switch strings.ToLower(c.DataType) {
 	case "smallint":
 		goType = "int16"
 	case "integer":
@@ -275,35 +296,61 @@ func pgTypeToGo(dataType, udtName string, nullable bool) string {
 		goType = "int64"
 	case "real":
 		goType = "float32"
-	case "double precision", "numeric":
+	case "double precision":
 		goType = "float64"
+	case "numeric":
+		goType = "string"
 	case "character varying", "character", "text":
 		goType = "string"
 	case "boolean":
 		goType = "bool"
-	case "timestamp without time zone", "timestamp with time zone", "date", "time without time zone", "time with time zone":
+	case "timestamp without time zone", "timestamp with time zone", "date":
 		goType = "time.Time"
+	case "time without time zone", "time with time zone":
+		goType = "string"
 	case "bytea":
 		goType = "[]byte"
 	case "json", "jsonb":
-		goType = "string"
+		goType = "json.RawMessage"
 	case "uuid":
 		goType = "string"
 	case "inet", "cidr", "macaddr":
 		goType = "string"
 	case "interval":
 		goType = "string"
-	case "array":
-		goType = "string"
+	case "array", "ARRAY":
+		goType = pgArrayElementGoType(c.ElementType)
 	case "user-defined":
 		goType = "string"
 	default:
 		goType = "string"
 	}
-	if nullable && goType != "string" && goType != "[]byte" {
+	if nullable && goType != "string" && goType != "[]byte" && goType != "json.RawMessage" && !strings.HasPrefix(goType, "[]") {
 		return "*" + goType
 	}
 	return goType
+}
+
+// pgArrayElementGoType 根据数组元素的 udt_name 返回 Go 切片类型。
+func pgArrayElementGoType(elemUdt string) string {
+	switch strings.ToLower(elemUdt) {
+	case "int2":
+		return "[]int16"
+	case "int4":
+		return "[]int32"
+	case "int8":
+		return "[]int64"
+	case "float4":
+		return "[]float32"
+	case "float8", "numeric":
+		return "[]float64"
+	case "bool":
+		return "[]bool"
+	case "varchar", "text", "bpchar", "uuid":
+		return "[]string"
+	default:
+		return "[]string"
+	}
 }
 
 func toJsonCase(name, jsonCase string) string {
