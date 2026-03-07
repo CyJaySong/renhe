@@ -1,8 +1,10 @@
 package redis
 
 import (
-	"fmt"
+	"context"
 	"sync"
+
+	"github.com/cyjaysong/renhe/os/rlog"
 )
 
 var (
@@ -32,12 +34,12 @@ func Database(name ...string) *Redis {
 	}
 	cfg, err := loadConfig(n)
 	if err != nil {
-		fmt.Printf("redis: %v\n", err)
+		rlog.Log().Error(context.Background(), "redis: load config failed", "name", n, "err", err)
 		return nil
 	}
 	r, err := newRedis(n, cfg)
 	if err != nil {
-		fmt.Printf("redis: failed to create instance %q: %v\n", n, err)
+		rlog.Log().Error(context.Background(), "redis: failed to create instance", "name", n, "err", err)
 		return nil
 	}
 	instances[n] = r

@@ -1,8 +1,10 @@
 package rdb
 
 import (
-	"fmt"
+	"context"
 	"sync"
+
+	"github.com/cyjaysong/renhe/os/rlog"
 )
 
 var (
@@ -32,12 +34,12 @@ func Database(name ...string) *DB {
 	}
 	cfg, err := loadConfig(n)
 	if err != nil {
-		fmt.Printf("rdb: %v\n", err)
+		rlog.Log().Error(context.Background(), "rdb: load config failed", "name", n, "err", err)
 		return nil
 	}
 	d, err := newDB(n, cfg)
 	if err != nil {
-		fmt.Printf("rdb: failed to create instance %q: %v\n", n, err)
+		rlog.Log().Error(context.Background(), "rdb: failed to create instance", "name", n, "err", err)
 		return nil
 	}
 	instances[n] = d

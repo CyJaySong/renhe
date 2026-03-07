@@ -1,7 +1,7 @@
 package rhttp
 
 import (
-	"log"
+	"context"
 
 	"github.com/cyjaysong/renhe/os/rlog"
 	"github.com/cyjaysong/renhe/util/rvalid"
@@ -18,7 +18,7 @@ type HttpSrv struct {
 func New() *HttpSrv {
 	cfg, err := loadConfig()
 	if err != nil {
-		log.Fatalf("http srv: %v\n", err)
+		rlog.Log().Fatal(context.Background(), "http srv: load config failed", "err", err)
 		return nil
 	}
 	echoEngine := echo.New()

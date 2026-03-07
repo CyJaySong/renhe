@@ -1,12 +1,14 @@
 package rhttp
 
 import (
+	"context"
 	"fmt"
-	"github.com/labstack/echo/v4"
-	"log"
 	"net/http"
 	"reflect"
 	"strings"
+
+	"github.com/cyjaysong/renhe/os/rlog"
+	"github.com/labstack/echo/v4"
 )
 
 const echoCtrlFuncBizResKey = "echo_ctrl_func_biz_res"
@@ -31,7 +33,7 @@ func EchoRegisterCtrlPointers[T *echo.Echo | *echo.Group](echoOrGroup T, ctrlPoi
 	for _, ctrl := range ctrlPointers {
 		ctrlType := reflect.TypeOf(ctrl)
 		if ctrlType.Kind() != reflect.Pointer || ctrlType.Elem().Kind() != reflect.Struct {
-			log.Fatalf("用于注册的ctrl对象必须*Ctrl形式, 错误注册对象 %s\n", ctrlType.Name())
+			rlog.Log().Fatal(context.Background(), "用于注册的ctrl对象必须*Ctrl形式", "ctrl", ctrlType.Name())
 		}
 		ctrlTypePath, ctrlTypeName := ctrlType.Elem().PkgPath(), ctrlType.Elem().Name()
 		ctrlValue := reflect.ValueOf(ctrl)
@@ -41,23 +43,23 @@ func EchoRegisterCtrlPointers[T *echo.Echo | *echo.Group](echoOrGroup T, ctrlPoi
 			funcItem := ctrlValue.Method(i)
 			funcType := funcItem.Type()
 			if funcType.NumIn() != 2 || funcType.NumOut() == 0 || funcType.NumOut() > 2 {
-				log.Fatalf("1[%s]函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)\n", funcFillName)
+				rlog.Log().Fatal(context.Background(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 1)
 			}
 			// 入参判断
 			if !funcType.In(0).Implements(echoContextReflectType) {
-				log.Fatalf("2[%s]函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)\n", funcFillName)
+				rlog.Log().Fatal(context.Background(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 2)
 			} else if in := funcType.In(1); in.Kind() != reflect.Pointer || in.Elem().Kind() != reflect.Struct {
-				log.Fatalf("3[%s]函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)\n", funcFillName)
+				rlog.Log().Fatal(context.Background(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 3)
 			}
 			// 出参有2个时参数判断第一个
 			if funcType.NumOut() == 2 {
 				if out := funcType.Out(0); out.Kind() != reflect.Pointer || out.Elem().Kind() != reflect.Struct {
-					log.Fatalf("4[%s]函数签名不符, 应为 func(*fiber.Ctx, *BizReq)(error) 或 func(*fiber.Ctx, *BizReq)(*BizRes, error)\n", funcFillName)
+					rlog.Log().Fatal(context.Background(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 4)
 				}
 			}
 			// 出参error判断 funcType.NumOut() == 1 or funcType.NumOut() == 2
 			if !funcType.Out(funcType.NumOut() - 1).Implements(errorReflectType) {
-				log.Fatalf("5[%s]函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)\n", funcFillName)
+				rlog.Log().Fatal(context.Background(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 5)
 			}
 
 			// 判断第二个入参是否包含 HttpApiMeta 元数据, 没有则跳过
@@ -84,8 +86,7 @@ func EchoRegisterCtrlPointers[T *echo.Echo | *echo.Group](echoOrGroup T, ctrlPoi
 					}
 				}
 				if len(disableMethods) > 0 {
-					disableMethod := strings.Join(disableMethods, ",")
-					log.Fatalf("[%s]函数签名不符, *BizReq method标签值不可用, 错误值为 %s\n", funcFillName, disableMethod)
+					rlog.Log().Fatal(context.Background(), "函数签名不符, *BizReq method标签值不可用", "func", funcFillName, "disableMethods", strings.Join(disableMethods, ","))
 				}
 			}
 			echoHandlerRegister(echoOrGroup, methods, pathTag, nameTag, funcType, funcItem)

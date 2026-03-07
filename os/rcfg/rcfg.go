@@ -35,7 +35,7 @@ func Cfg(paths ...string) *viper.Viper {
 		v.AddConfigPath("config")
 		v.AddConfigPath(".")
 		if err := v.ReadInConfig(); err != nil {
-			log.Fatalf("配置文件读取出错：%s \n", err)
+			log.Fatalf("配置文件读取出错: %v\n", err)
 		}
 		instance = v
 	})

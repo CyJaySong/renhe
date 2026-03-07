@@ -18,6 +18,6 @@ var Main = &struct {
 		api := httpSrv.Group("/api")
 		rhttp.EchoRegisterCtrlPointers(api, new(controller.User))
 
-		httpSrv.Logger.Fatal(httpSrv.Start(":8000"))
+		httpSrv.Logger.Fatal(httpSrv.Start(httpSrv.Cfg.Address))
 	},
 }
