@@ -13,7 +13,10 @@ var Main = &struct {
 }{
 	Run: func() {
 		httpSrv := r.HttpSrv()
-		httpSrv.Use(middleware.Recover())
+		httpSrv.Use(
+			middleware.Recover(),
+			middleware.CORS(),
+		)
 
 		api := httpSrv.Group("/api")
 		rhttp.EchoRegisterCtrlPointers(api, new(controller.User))

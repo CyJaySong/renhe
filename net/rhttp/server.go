@@ -6,6 +6,7 @@ import (
 	"github.com/cyjaysong/renhe/os/rlog"
 	"github.com/cyjaysong/renhe/util/rvalid"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 )
 
 // HttpSrv HTTP 服务器，内嵌 echo.Echo 并携带配置。
@@ -24,5 +25,6 @@ func New() *HttpSrv {
 	echoEngine := echo.New()
 	echoEngine.Validator = rvalid.Instance()
 	echoEngine.Logger = rlog.Log().EchoLogger()
+	echoEngine.Use(otelecho.Middleware("Echo"))
 	return &HttpSrv{Echo: echoEngine, Cfg: cfg}
 }
