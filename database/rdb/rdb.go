@@ -37,6 +37,7 @@ type DB struct {
 	name   string
 	master *bun.DB
 	slaves []*slaveNode
+	rrIdx  atomic.Uint64 // Round-Robin 计数器
 }
 
 const healthCheckInterval = 5 * time.Second
@@ -86,29 +87,21 @@ func (d *DB) Master() *bun.DB {
 	return d.master
 }
 
-// Slave 返回一个健康的从库实例（最小活跃连接数策略）。
+// Slave 返回一个健康的从库实例（Round-Robin 策略）。
 // 若所有从库不健康或无从库配置，回退到主库。
 func (d *DB) Slave() *bun.DB {
-	if len(d.slaves) == 0 {
+	n := len(d.slaves)
+	if n == 0 {
 		return d.master
 	}
-	var best *slaveNode
-	bestActive := int(^uint(0) >> 1)
-	for _, s := range d.slaves {
-		if !s.healthy.Load() {
-			continue
-		}
-		stats := s.db.DB.Stats()
-		active := stats.InUse
-		if active < bestActive {
-			bestActive = active
-			best = s
+	idx := d.rrIdx.Add(1)
+	for i := 0; i < n; i++ {
+		s := d.slaves[(int(idx)+i)%n]
+		if s.healthy.Load() {
+			return s.db
 		}
 	}
-	if best == nil {
-		return d.master
-	}
-	return best.db
+	return d.master
 }
 
 // healthCheck 后台定期 Ping 所有从库节点，标记健康状态。
