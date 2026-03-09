@@ -22,10 +22,10 @@ type Validator struct {
 // Instance 返回全局 Validator 单例。
 func Instance() *Validator {
 	once.Do(func() {
-		v1 := validator.New()
+		v1 := validator.New(validator.WithRequiredStructEnabled())
 		v1.SetTagName("v")
 
-		v2 := validator.New()
+		v2 := validator.New(validator.WithRequiredStructEnabled())
 		v2.SetTagName("v2")
 
 		instance = &Validator{v1: v1, v2: v2}
@@ -33,12 +33,12 @@ func Instance() *Validator {
 	return instance
 }
 
-// RegisterValidation 同时向两组验证器注册自定义校验规则。
-func (v *Validator) RegisterValidation(tag string, fn validator.Func) (err error) {
-	if err = v.v1.RegisterValidation(tag, fn); err != nil {
+// RegisterValidationCtx 同时向两组验证器注册自定义校验规则。
+func (v *Validator) RegisterValidationCtx(tag string, funcCtx validator.FuncCtx) (err error) {
+	if err = v.v1.RegisterValidationCtx(tag, funcCtx); err != nil {
 		return
 	}
-	return v.v2.RegisterValidation(tag, fn)
+	return v.v2.RegisterValidationCtx(tag, funcCtx)
 }
 
 // Validate 使用 "v" tag 校验结构体。实现 echo.Validator 接口。

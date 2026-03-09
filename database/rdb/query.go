@@ -121,8 +121,8 @@ func (d *DB) BeginTxWithCtx(ctx context.Context, opts *sql.TxOptions) (bun.Tx, c
 }
 
 // RunInTx 在事务中执行 fn，fn 收到的 ctx 已注入事务。fn 返回 error 时自动回滚，否则提交。
-func (d *DB) RunInTx(ctx context.Context, opts *sql.TxOptions, fn func(ctx context.Context) error) error {
+func (d *DB) RunInTx(ctx context.Context, opts *sql.TxOptions, fn func(ctx context.Context, tx bun.Tx) error) error {
 	return d.master.RunInTx(ctx, opts, func(ctx context.Context, tx bun.Tx) error {
-		return fn(WithTx(ctx, tx))
+		return fn(WithTx(ctx, tx), tx)
 	})
 }
