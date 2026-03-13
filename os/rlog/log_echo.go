@@ -2,6 +2,7 @@ package rlog
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 
@@ -53,13 +54,32 @@ func (e *echoLogger) Error(i ...interface{})                    { e.l.logger.Err
 func (e *echoLogger) Errorf(format string, args ...interface{}) { e.l.logger.Errorf(format, args...) }
 func (e *echoLogger) Errorj(j log.JSON)                         { e.l.logger.Error(jsonStr(j)) }
 
-func (e *echoLogger) Fatal(i ...interface{})                    { e.l.logger.Fatal(i...) }
-func (e *echoLogger) Fatalf(format string, args ...interface{}) { e.l.logger.Fatalf(format, args...) }
-func (e *echoLogger) Fatalj(j log.JSON)                         { e.l.logger.Fatal(jsonStr(j)) }
+func (e *echoLogger) Fatal(i ...interface{}) {
+	e.l.logger.Fatal(i...)
+	os.Exit(1)
+}
+func (e *echoLogger) Fatalf(format string, args ...interface{}) {
+	e.l.logger.Fatalf(format, args...)
+	os.Exit(1)
+}
+func (e *echoLogger) Fatalj(j log.JSON) {
+	e.l.logger.Fatal(jsonStr(j))
+	os.Exit(1)
+}
 
-func (e *echoLogger) Panic(i ...interface{})                    { e.l.logger.Panic(i...) }
-func (e *echoLogger) Panicf(format string, args ...interface{}) { e.l.logger.Panicf(format, args...) }
-func (e *echoLogger) Panicj(j log.JSON)                         { e.l.logger.Panic(jsonStr(j)) }
+func (e *echoLogger) Panic(i ...interface{}) {
+	e.l.logger.Panic(i...)
+	panic(fmt.Sprint(i...))
+}
+func (e *echoLogger) Panicf(format string, args ...interface{}) {
+	e.l.logger.Panicf(format, args...)
+	panic(fmt.Sprintf(format, args...))
+}
+func (e *echoLogger) Panicj(j log.JSON) {
+	s := jsonStr(j)
+	e.l.logger.Panic(s)
+	panic(s)
+}
 
 // jsonStr 将 log.JSON 序列化为字符串，用于 Printj/Debugj 等 JSON 日志方法。
 func jsonStr(j log.JSON) string {

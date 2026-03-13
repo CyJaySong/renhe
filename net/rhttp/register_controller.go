@@ -1,8 +1,8 @@
 package rhttp
 
 import (
-	"context"
 	"fmt"
+	"github.com/cyjaysong/renhe/os/rctx"
 	"net/http"
 	"reflect"
 	"strings"
@@ -33,7 +33,7 @@ func EchoRegisterCtrlPointers[T *echo.Echo | *echo.Group](echoOrGroup T, ctrlPoi
 	for _, ctrl := range ctrlPointers {
 		ctrlType := reflect.TypeOf(ctrl)
 		if ctrlType.Kind() != reflect.Pointer || ctrlType.Elem().Kind() != reflect.Struct {
-			rlog.Log().Fatal(context.Background(), "用于注册的ctrl对象必须*Ctrl形式", "ctrl", ctrlType.Name())
+			rlog.Log().Fatal(rctx.GetInitCtx(), "用于注册的ctrl对象必须*Ctrl形式", "ctrl", ctrlType.Name())
 		}
 		ctrlTypePath, ctrlTypeName := ctrlType.Elem().PkgPath(), ctrlType.Elem().Name()
 		ctrlValue := reflect.ValueOf(ctrl)
@@ -43,23 +43,23 @@ func EchoRegisterCtrlPointers[T *echo.Echo | *echo.Group](echoOrGroup T, ctrlPoi
 			funcItem := ctrlValue.Method(i)
 			funcType := funcItem.Type()
 			if funcType.NumIn() != 2 || funcType.NumOut() == 0 || funcType.NumOut() > 2 {
-				rlog.Log().Fatal(context.Background(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 1)
+				rlog.Log().Fatal(rctx.GetInitCtx(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 1)
 			}
 			// 入参判断
 			if !funcType.In(0).Implements(echoContextReflectType) {
-				rlog.Log().Fatal(context.Background(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 2)
+				rlog.Log().Fatal(rctx.GetInitCtx(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 2)
 			} else if in := funcType.In(1); in.Kind() != reflect.Pointer || in.Elem().Kind() != reflect.Struct {
-				rlog.Log().Fatal(context.Background(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 3)
+				rlog.Log().Fatal(rctx.GetInitCtx(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 3)
 			}
 			// 出参有2个时参数判断第一个
 			if funcType.NumOut() == 2 {
 				if out := funcType.Out(0); out.Kind() != reflect.Pointer || out.Elem().Kind() != reflect.Struct {
-					rlog.Log().Fatal(context.Background(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 4)
+					rlog.Log().Fatal(rctx.GetInitCtx(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 4)
 				}
 			}
 			// 出参error判断 funcType.NumOut() == 1 or funcType.NumOut() == 2
 			if !funcType.Out(funcType.NumOut() - 1).Implements(errorReflectType) {
-				rlog.Log().Fatal(context.Background(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 5)
+				rlog.Log().Fatal(rctx.GetInitCtx(), "函数签名不符, 应为 func(echo.Context, *BizReq)(error) 或 func(echo.Context, *BizReq)(*BizRes, error)", "func", funcFillName, "check", 5)
 			}
 
 			// 判断第二个入参是否包含 HttpApiMeta 元数据, 没有则跳过
@@ -86,7 +86,7 @@ func EchoRegisterCtrlPointers[T *echo.Echo | *echo.Group](echoOrGroup T, ctrlPoi
 					}
 				}
 				if len(disableMethods) > 0 {
-					rlog.Log().Fatal(context.Background(), "函数签名不符, *BizReq method标签值不可用", "func", funcFillName, "disableMethods", strings.Join(disableMethods, ","))
+					rlog.Log().Fatal(rctx.GetInitCtx(), "函数签名不符, *BizReq method标签值不可用", "func", funcFillName, "disableMethods", strings.Join(disableMethods, ","))
 				}
 			}
 			echoHandlerRegister(echoOrGroup, methods, pathTag, nameTag, funcType, funcItem)
@@ -124,9 +124,9 @@ func echoHandler(funcType reflect.Type, funcItem reflect.Value) echo.HandlerFunc
 		if err = ctx.Bind(bizReq.Interface()); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		// 校验入参
+		// 校验入参（ValidationErrors 由 ValidationMiddleware 统一处理）
 		if err = ctx.Validate(bizReq.Interface()); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return err
 		}
 		// 构建入参
 		inParams := []reflect.Value{reflect.ValueOf(ctx), bizReq}

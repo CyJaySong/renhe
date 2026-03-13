@@ -118,9 +118,9 @@ func (d *DB) healthCheck() {
 			now := err == nil
 			s.healthy.Store(now)
 			if was && !now {
-				rlog.Log().Warnf(context.Background(), "rdb[%s]: slave %s marked unhealthy: %v", d.name, maskDSN(s.dsn), err)
+				rlog.Log().Warnf(ctx, "rdb[%s]: slave %s marked unhealthy: %v", d.name, maskDSN(s.dsn), err)
 			} else if !was && now {
-				rlog.Log().Infof(context.Background(), "rdb[%s]: slave %s recovered", d.name, maskDSN(s.dsn))
+				rlog.Log().Infof(ctx, "rdb[%s]: slave %s recovered", d.name, maskDSN(s.dsn))
 			}
 		}
 	}

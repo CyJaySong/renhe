@@ -3,6 +3,7 @@ package rlog
 import (
 	"context"
 	"fmt"
+	"os"
 )
 
 // stackSkip 调用栈跳过层数：runtime.Callers → captureStack → appendStack → log_api method
@@ -72,11 +73,11 @@ func (l *Logger) Noticef(ctx context.Context, format string, v ...any) {
 }
 
 func (l *Logger) Warn(ctx context.Context, msg any, args ...any) {
-	l.withCtx(ctx).Warn(append([]any{l.appendStack(msg)}, args...)...)
+	l.withCtx(ctx).Warn(append([]any{msg}, args...)...)
 }
 
 func (l *Logger) Warnf(ctx context.Context, format string, v ...any) {
-	l.withCtx(ctx).Warn(l.appendStackf(format, v...))
+	l.withCtx(ctx).Warnf(format, v...)
 }
 
 func (l *Logger) Error(ctx context.Context, msg any, args ...any) {
@@ -89,18 +90,23 @@ func (l *Logger) Errorf(ctx context.Context, format string, v ...any) {
 
 func (l *Logger) Fatal(ctx context.Context, msg any, args ...any) {
 	l.withCtx(ctx).Fatal(append([]any{l.appendStack(msg)}, args...)...)
+	os.Exit(1)
 }
 
 func (l *Logger) Fatalf(ctx context.Context, format string, v ...any) {
 	l.withCtx(ctx).Fatal(l.appendStackf(format, v...))
+	os.Exit(1)
 }
 
 func (l *Logger) Panic(ctx context.Context, msg any, args ...any) {
 	l.withCtx(ctx).Panic(append([]any{l.appendStack(msg)}, args...)...)
+	panic(msg)
 }
 
 func (l *Logger) Panicf(ctx context.Context, format string, v ...any) {
-	l.withCtx(ctx).Panic(l.appendStackf(format, v...))
+	msg := l.appendStackf(format, v...)
+	l.withCtx(ctx).Panic(msg)
+	panic(msg)
 }
 
 // Print 兼容接口，不接受 ctx。

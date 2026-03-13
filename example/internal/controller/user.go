@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"github.com/uptrace/bun"
 	"net/http"
 
 	"example/internal/model/ent"
@@ -87,7 +88,7 @@ func (u *User) TxDemo(ctx echo.Context, req *UserTxReq) (*UserTxRes, error) {
 	db := rdb.Database()
 	var user ent.User
 
-	err := db.RunInTx(ctx.Request().Context(), nil, func(txCtx context.Context) error {
+	err := db.RunInTx(ctx.Request().Context(), nil, func(txCtx context.Context, tx bun.Tx) error {
 		user = ent.User{
 			Phone:    req.Phone,
 			Nickname: req.Nickname,

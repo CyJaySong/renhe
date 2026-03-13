@@ -1,7 +1,7 @@
 package rdb
 
 import (
-	"context"
+	"github.com/cyjaysong/renhe/os/rctx"
 	"sync"
 
 	"github.com/cyjaysong/renhe/os/rlog"
@@ -34,12 +34,12 @@ func Database(name ...string) *DB {
 	}
 	cfg, err := loadConfig(n)
 	if err != nil {
-		rlog.Log().Error(context.Background(), "rdb: load config failed", "name", n, "err", err)
+		rlog.Log().Error(rctx.GetInitCtx(), "rdb: load config failed", "name", n, "err", err)
 		return nil
 	}
 	d, err := newDB(n, cfg)
 	if err != nil {
-		rlog.Log().Error(context.Background(), "rdb: failed to create instance", "name", n, "err", err)
+		rlog.Log().Error(rctx.GetInitCtx(), "rdb: failed to create instance", "name", n, "err", err)
 		return nil
 	}
 	instances[n] = d

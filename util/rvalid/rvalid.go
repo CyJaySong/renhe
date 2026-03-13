@@ -3,9 +3,9 @@
 package rvalid
 
 import (
-	"sync"
-
 	"github.com/go-playground/validator/v10"
+	zhTrans "github.com/go-playground/validator/v10/translations/zh"
+	"sync"
 )
 
 var (
@@ -23,9 +23,11 @@ type Validator struct {
 func Instance() *Validator {
 	once.Do(func() {
 		v1 := validator.New(validator.WithRequiredStructEnabled())
+		_ = zhTrans.RegisterDefaultTranslations(v1, zhTranslator)
 		v1.SetTagName("v")
 
 		v2 := validator.New(validator.WithRequiredStructEnabled())
+		_ = zhTrans.RegisterDefaultTranslations(v2, zhTranslator)
 		v2.SetTagName("v2")
 
 		instance = &Validator{v1: v1, v2: v2}
@@ -33,30 +35,10 @@ func Instance() *Validator {
 	return instance
 }
 
-// RegisterValidationCtx 同时向两组验证器注册自定义校验规则。
-func (v *Validator) RegisterValidationCtx(tag string, funcCtx validator.FuncCtx) (err error) {
-	if err = v.v1.RegisterValidationCtx(tag, funcCtx); err != nil {
-		return
-	}
-	return v.v2.RegisterValidationCtx(tag, funcCtx)
+func (v *Validator) V() *validator.Validate {
+	return v.v1
 }
 
-// Validate 使用 "v" tag 校验结构体。实现 echo.Validator 接口。
-func (v *Validator) Validate(obj any) error {
-	return v.v1.Struct(obj)
-}
-
-// ValidateV2 使用 "v2" tag 校验结构体。
-func (v *Validator) ValidateV2(obj any) error {
-	return v.v2.Struct(obj)
-}
-
-// Validate 包级快捷方法，使用 "v" tag 校验。
-func Validate(obj any) error {
-	return Instance().Validate(obj)
-}
-
-// ValidateV2 包级快捷方法，使用 "v2" tag 校验。
-func ValidateV2(obj any) error {
-	return Instance().ValidateV2(obj)
+func (v *Validator) V2() *validator.Validate {
+	return v.v2
 }

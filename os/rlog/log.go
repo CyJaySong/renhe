@@ -7,8 +7,7 @@
 //	  level: "debug"            # trace/debug/info/notice/warn/error/fatal（默认 info）
 //	  format: "text"            # text/json（默认 text）
 //	  output: "both"            # console/file/both（默认 console）
-//	  callerSkip: 7             # 调用栈跳过层数（默认 7）
-//	  stack: false              # Error/Warn/Fatal 级别是否追加完整调用栈（默认 false）
+//	  stack: false              # Error/Fatal/Panic 级别是否追加完整调用栈（默认 false）
 //	  file:
 //	    path: "logs/app.log"    # 日志文件路径（output 包含 file 时必填）
 //	    maxSize: 128             # 单文件最大体积 MB（默认 128）
@@ -37,17 +36,16 @@ var (
 // Logger 封装 gookit/slog.Logger，提供带 context 的日志方法。
 type Logger struct {
 	logger *slog.Logger
-	stack  bool // 是否在 Error/Warn/Fatal 级别追加堆栈
+	stack  bool // 是否在 Error/Fatal/Panic 级别追加堆栈
 }
 
 // logConfig 内部配置结构体，对应 YAML logger 节点。
 type logConfig struct {
-	Level      string     `yaml:"level"`
-	Format     string     `yaml:"format"`
-	Output     string     `yaml:"output"`
-	CallerSkip int        `yaml:"callerSkip"`
-	Stack      bool       `yaml:"stack"` // Error/Warn/Fatal 级别是否追加调用栈
-	File       fileConfig `yaml:"file"`
+	Level  string     `yaml:"level"`
+	Format string     `yaml:"format"`
+	Output string     `yaml:"output"`
+	Stack  bool       `yaml:"stack"` // Error/Fatal/Panic 级别是否追加调用栈
+	File   fileConfig `yaml:"file"`
 }
 
 type fileConfig struct {
@@ -68,9 +66,7 @@ func Log() *Logger {
 		useJSON := strings.EqualFold(cfg.Format, "json")
 
 		inner := slog.New()
-		inner.ReportCaller = true
-		inner.CallerSkip = cfg.CallerSkip
-		inner.CallerFlag = slog.CallerFlagFpLine
+		inner.DoNothingOnPanicFatal()
 
 		output := strings.ToLower(cfg.Output)
 
@@ -106,10 +102,9 @@ func (l *Logger) Close() {
 // loadConfig 从 rcfg 读取 logger 配置并填充默认值。
 func loadConfig() logConfig {
 	cfg := logConfig{
-		Level:      "info",
-		Format:     "text",
-		Output:     "console",
-		CallerSkip: 7,
+		Level:  "info",
+		Format: "text",
+		Output: "console",
 		File: fileConfig{
 			Path:       "logs/app.log",
 			MaxSize:    128,
@@ -130,9 +125,6 @@ func loadConfig() logConfig {
 	}
 	_ = sub.Unmarshal(&cfg, rcfg.YamlTagOption)
 	// 确保默认值
-	if cfg.CallerSkip <= 0 {
-		cfg.CallerSkip = 6
-	}
 	if cfg.File.MaxSize <= 0 {
 		cfg.File.MaxSize = 128
 	}
@@ -225,12 +217,11 @@ func parseRotateTime(s string) rotatefile.RotateTime {
 	}
 }
 
-// customTemplate 自定义日志模板：caller 独占一行，便于 IDE 点击跳转。
+// customTemplate 自定义日志模板。
 // 输出效果：
 //
 //	[2025/01/15 14:30:25] [application] [INFO] message content
-//	[/Users/me/project/main.go:42]
-const customTemplate = "[{{datetime}}] [{{channel}}] [{{level}}] {{message}} {{data}} {{extra}}\n[{{caller}}]\n"
+const customTemplate = "[{{datetime}}] [{{channel}}] [{{level}}] {{message}} {{data}} {{extra}}\n"
 
 // applyTextFormatter 为 handler 设置自定义文本格式化器。
 func applyTextFormatter(h slog.FormattableHandler) {

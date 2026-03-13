@@ -1,5 +1,5 @@
 // Package r 是框架的门面包，提供全局组件的快捷访问入口。
-// 通过 r.Cfg()、r.Log()、r.DB()、r.Redis()、r.HttpSrv() 获取各组件实例。
+// 通过 r.Cfg()、r.Log()、r.DB()、r.Redis()、r.Validator()、r.HttpSrv() 获取各组件实例。
 package r
 
 import (
@@ -8,6 +8,8 @@ import (
 	"github.com/cyjaysong/renhe/net/rhttp"
 	"github.com/cyjaysong/renhe/os/rcfg"
 	"github.com/cyjaysong/renhe/os/rlog"
+	"github.com/cyjaysong/renhe/util/rvalid"
+	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 )
 
@@ -22,6 +24,16 @@ func parseName(name []string) string {
 // HttpSrv 创建并返回 HTTP 服务器实例（内嵌 echo.Echo）。
 func HttpSrv() *rhttp.HttpSrv {
 	return rhttp.New()
+}
+
+// Validator 返回全局验证实例
+func Validator() *validator.Validate {
+	return rvalid.Instance().V()
+}
+
+// Validator2 返回全局验证实例
+func Validator2() *validator.Validate {
+	return rvalid.Instance().V2()
 }
 
 // Cfg 返回全局配置实例，可传入路径片段获取子配置。

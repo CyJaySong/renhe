@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"context"
+	"github.com/cyjaysong/renhe/os/rctx"
 	"sync"
 
 	"github.com/cyjaysong/renhe/os/rlog"
@@ -32,14 +32,10 @@ func Database(name ...string) *Redis {
 	if r, ok := instances[n]; ok {
 		return r
 	}
-	cfg, err := loadConfig(n)
-	if err != nil {
-		rlog.Log().Error(context.Background(), "redis: load config failed", "name", n, "err", err)
-		return nil
-	}
+	cfg := loadConfig(n)
 	r, err := newRedis(n, cfg)
 	if err != nil {
-		rlog.Log().Error(context.Background(), "redis: failed to create instance", "name", n, "err", err)
+		rlog.Log().Errorf(rctx.GetInitCtx(), "redis: failed to create `%s` instance: %s", name, err)
 		return nil
 	}
 	instances[n] = r

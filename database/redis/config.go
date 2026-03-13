@@ -2,7 +2,8 @@
 package redis
 
 import (
-	"fmt"
+	"github.com/cyjaysong/renhe/os/rctx"
+	"github.com/cyjaysong/renhe/os/rlog"
 	"time"
 
 	"github.com/cyjaysong/renhe/os/rcfg"
@@ -29,21 +30,23 @@ type Config struct {
 }
 
 // loadConfig 从全局配置中读取 redis.<name> 下的 Redis 配置并反序列化。
-func loadConfig(name string) (cfg Config, err error) {
+func loadConfig(name string) (cfg Config) {
 	key := "redis." + name
 	allCfg := rcfg.Cfg()
 	if !allCfg.IsSet(key) {
-		return Config{}, fmt.Errorf("config `%s` not found", key)
+		rlog.Log().Warnf(rctx.GetInitCtx(), "config `%s` not found", key)
+		return
 	}
-	sub := allCfg.Sub(key)
-	if sub == nil {
-		return Config{}, fmt.Errorf("config `%s` is empty", key)
-	}
-	if err = sub.Unmarshal(&cfg, rcfg.YamlTagOption); err != nil {
-		return Config{}, fmt.Errorf("config `%s`: unmarshal failed: %w", key, err)
+	if sub := allCfg.Sub(key); sub == nil {
+		rlog.Log().Warnf(rctx.GetInitCtx(), "config `%s` is empty", key)
+		return Config{}
+	} else if err := sub.Unmarshal(&cfg, rcfg.YamlTagOption); err != nil {
+		rlog.Log().Warnf(rctx.GetInitCtx(), "config `%s`: unmarshal failed: %s", key, err)
+		return Config{}
 	}
 	if len(cfg.Address) == 0 {
-		return Config{}, fmt.Errorf("config `%s`: address is required", key)
+		rlog.Log().Warnf(rctx.GetInitCtx(), "config `%s`: address is required", key)
+		return Config{}
 	}
 	return
 }

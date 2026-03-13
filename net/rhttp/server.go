@@ -1,8 +1,7 @@
 package rhttp
 
 import (
-	"context"
-
+	"github.com/cyjaysong/renhe/net/rhttp/middleware"
 	"github.com/cyjaysong/renhe/os/rlog"
 	"github.com/cyjaysong/renhe/util/rvalid"
 	"github.com/labstack/echo/v4"
@@ -17,14 +16,12 @@ type HttpSrv struct {
 
 // New 创建 HttpSrv 实例，加载配置并初始化 echo 引擎、验证器和日志。
 func New() *HttpSrv {
-	cfg, err := loadConfig()
-	if err != nil {
-		rlog.Log().Fatal(context.Background(), "http srv: load config failed", "err", err)
-		return nil
-	}
+	cfg := loadConfig()
 	echoEngine := echo.New()
+	echoEngine.HideBanner = true
 	echoEngine.Validator = rvalid.Instance()
 	echoEngine.Logger = rlog.Log().EchoLogger()
 	echoEngine.Use(otelecho.Middleware("Echo"))
+	echoEngine.Use(middleware.ValidationMiddleware())
 	return &HttpSrv{Echo: echoEngine, Cfg: cfg}
 }

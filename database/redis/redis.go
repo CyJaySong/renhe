@@ -3,6 +3,8 @@ package redis
 import (
 	"context"
 	"fmt"
+	"github.com/cyjaysong/renhe/os/rctx"
+	"time"
 
 	goredis "github.com/redis/go-redis/v9"
 )
@@ -35,7 +37,10 @@ func newRedis(name string, cfg Config) (*Redis, error) {
 	}
 
 	client := goredis.NewUniversalClient(opts)
-	if err := client.Ping(context.Background()).Err(); err != nil {
+	ctx, cancel := context.WithTimeout(rctx.GetInitCtx(), time.Second*3)
+	err := client.Ping(ctx).Err()
+	cancel()
+	if err != nil {
 		_ = client.Close()
 		return nil, fmt.Errorf("redis ping failed: %w", err)
 	}
