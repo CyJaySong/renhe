@@ -2,12 +2,12 @@ package rctx
 
 import (
 	"context"
-	"go.opentelemetry.io/otel/trace"
 	"os"
 	"strings"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type (
@@ -38,35 +38,24 @@ func init() {
 	)
 }
 
-// New creates and returns a context which contains context id.
+// New creates and returns a context which contains a trace id.
+// The internal span is ended immediately; use WithSpan for real span tracking.
 func New() context.Context {
-	return WithSpan(context.Background(), "rctx.New")
-}
-
-// WithCtx creates and returns a context containing context id upon given parent context `ctx`.
-//
-// Deprecated: use WithSpan instead.
-func WithCtx(ctx context.Context) context.Context {
-	if CtxId(ctx) != "" {
-		return ctx
-	}
-	var span trace.Span
-	ctx, span = otel.Tracer("").Start(ctx, "rctx.WithCtx")
-	defer span.End()
+	ctx, span := otel.Tracer("rctx").Start(context.Background(), "rctx.New")
+	span.End()
 	return ctx
 }
 
-// WithSpan creates and returns a context containing span upon given parent context `ctx`.
-func WithSpan(ctx context.Context, spanName string) context.Context {
-	if CtxId(ctx) != "" {
-		return ctx
-	}
+// WithSpan creates a new span on the given ctx and returns both.
+// Caller is responsible for calling span.End() when the operation completes.
+//
+//	ctx, span := rctx.WithSpan(ctx, "myOperation")
+//	defer span.End()
+func WithSpan(ctx context.Context, spanName string) (context.Context, trace.Span) {
 	if spanName == "" {
 		spanName = "rctx.WithSpan"
 	}
-	ctx, span := otel.Tracer(spanName).Start(ctx, spanName)
-	defer span.End()
-	return ctx
+	return otel.Tracer("rctx").Start(ctx, spanName)
 }
 
 // CtxId retrieves and returns the context id from context.
@@ -84,6 +73,18 @@ func CtxId(ctx context.Context) string {
 // Note that this function cannot be called in multiple goroutines.
 func SetInitCtx(ctx context.Context) {
 	initCtx = ctx
+}
+
+// ReExtractInitCtx re-extracts OpenTelemetry context from environment variables.
+// Should be called after otel.SetTextMapPropagator has been configured (e.g. after rotrace.Init).
+func ReExtractInitCtx() {
+	m := make(map[string]string)
+	for _, s := range os.Environ() {
+		if i := strings.IndexByte(s, '='); i != -1 {
+			m[s[0:i]] = s[i+1:]
+		}
+	}
+	initCtx = otel.GetTextMapPropagator().Extract(context.Background(), propagation.MapCarrier(m))
 }
 
 // GetInitCtx returns the initialization context.

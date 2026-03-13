@@ -7,9 +7,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cyjaysong/renhe/os/rctx"
 	"github.com/cyjaysong/renhe/os/rlog"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
+	"github.com/uptrace/bun/extra/bunotel"
 )
 
 // slaveNode 封装一个从库节点，包含连接和健康状态。
@@ -45,6 +47,7 @@ const healthCheckInterval = 5 * time.Second
 // newDB 根据配置创建主库和从库实例。若存在从库，启动后台健康检查 goroutine。
 func newDB(name string, cfg Config) (*DB, error) {
 	bunQueryHookForLog := rlog.Log().BunQueryHook(5 * time.Second)
+	bunOtelHook := bunotel.NewQueryHook(bunotel.WithDBName(name))
 
 	sqlDb, err := openSqlDB(cfg.DSN, cfg.Pool)
 	if err != nil {
@@ -52,6 +55,7 @@ func newDB(name string, cfg Config) (*DB, error) {
 	}
 
 	masterBun := bun.NewDB(sqlDb, pgdialect.New())
+	masterBun = masterBun.WithQueryHook(bunOtelHook)
 	masterBun = masterBun.WithQueryHook(bunQueryHookForLog)
 	d := &DB{cfg: cfg, name: name, master: masterBun}
 
@@ -60,7 +64,8 @@ func newDB(name string, cfg Config) (*DB, error) {
 			return nil, fmt.Errorf("rdb: failed to open slave[%d]: %w", i, err)
 		}
 		slaveBun := bun.NewDB(sqlDb, pgdialect.New())
-		slaveBun = slaveBun.WithQueryHook(bunQueryHookForLog)
+		masterBun = masterBun.WithQueryHook(bunOtelHook)
+		masterBun = masterBun.WithQueryHook(bunQueryHookForLog)
 		node := &slaveNode{dsn: dsn, db: slaveBun}
 		node.healthy.Store(true)
 		d.slaves = append(d.slaves, node)
@@ -111,7 +116,7 @@ func (d *DB) healthCheck() {
 	defer ticker.Stop()
 	for range ticker.C {
 		for _, s := range d.slaves {
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			ctx, cancel := context.WithTimeout(rctx.GetInitCtx(), 3*time.Second)
 			err := s.db.DB.PingContext(ctx)
 			cancel()
 			was := s.healthy.Load()

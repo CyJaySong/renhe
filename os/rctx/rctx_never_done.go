@@ -5,32 +5,18 @@ import (
 	"time"
 )
 
-// neverDoneCtx never done.
+// neverDoneCtx wraps a context to never be done, while preserving its values.
+// This is useful for passing trace context to async goroutines without cancellation.
 type neverDoneCtx struct {
 	context.Context
 }
 
-// Done forbids the context done from parent context.
-func (*neverDoneCtx) Done() <-chan struct{} {
-	return nil
-}
+func (neverDoneCtx) Deadline() (deadline time.Time, ok bool) { return }
+func (neverDoneCtx) Done() <-chan struct{}                    { return nil }
+func (neverDoneCtx) Err() error                              { return nil }
 
-// Deadline forbids the context deadline from parent context.
-func (*neverDoneCtx) Deadline() (deadline time.Time, ok bool) {
-	return time.Time{}, false
-}
-
-// Err forbids the context done from parent context.
-func (c *neverDoneCtx) Err() error {
-	return nil
-}
-
-// NeverDone wraps and returns a new context object that will be never done,
-// which forbids the context manually done, to make the context can be propagated
-// to asynchronous goroutines.
-//
-// Note that, it does not affect the closing (canceling) of the parent context,
-// as it is a wrapper for its parent, which only affects the next context handling.
+// NeverDone wraps the given context so that it is never cancelled or timed out.
+// Values (including trace span) from the original context are preserved.
 func NeverDone(ctx context.Context) context.Context {
-	return &neverDoneCtx{ctx}
+	return neverDoneCtx{ctx}
 }

@@ -1,8 +1,9 @@
 package redis
 
 import (
-	"github.com/cyjaysong/renhe/os/rctx"
 	"sync"
+
+	"github.com/cyjaysong/renhe/os/rctx"
 
 	"github.com/cyjaysong/renhe/os/rlog"
 )

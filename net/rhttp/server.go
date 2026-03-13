@@ -3,6 +3,7 @@ package rhttp
 import (
 	"github.com/cyjaysong/renhe/net/rhttp/middleware"
 	"github.com/cyjaysong/renhe/os/rlog"
+	"github.com/cyjaysong/renhe/os/rotrace"
 	"github.com/cyjaysong/renhe/util/rvalid"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
@@ -21,7 +22,7 @@ func New() *HttpSrv {
 	echoEngine.HideBanner = true
 	echoEngine.Validator = rvalid.Instance()
 	echoEngine.Logger = rlog.Log().EchoLogger()
-	echoEngine.Use(otelecho.Middleware("Echo"))
+	echoEngine.Use(otelecho.Middleware(rotrace.ServiceName()))
 	echoEngine.Use(middleware.ValidationMiddleware())
 	return &HttpSrv{Echo: echoEngine, Cfg: cfg}
 }

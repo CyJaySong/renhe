@@ -2,9 +2,10 @@
 package redis
 
 import (
+	"time"
+
 	"github.com/cyjaysong/renhe/os/rctx"
 	"github.com/cyjaysong/renhe/os/rlog"
-	"time"
 
 	"github.com/cyjaysong/renhe/os/rcfg"
 )

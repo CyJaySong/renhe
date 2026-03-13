@@ -3,9 +3,10 @@ package redis
 import (
 	"context"
 	"fmt"
-	"github.com/cyjaysong/renhe/os/rctx"
 	"time"
 
+	"github.com/cyjaysong/renhe/os/rctx"
+	"github.com/redis/go-redis/extra/redisotel/v9"
 	goredis "github.com/redis/go-redis/v9"
 )
 
@@ -37,6 +38,10 @@ func newRedis(name string, cfg Config) (*Redis, error) {
 	}
 
 	client := goredis.NewUniversalClient(opts)
+	if err := redisotel.InstrumentTracing(client); err != nil {
+		_ = client.Close()
+		return nil, fmt.Errorf("redis otel tracing: %w", err)
+	}
 	ctx, cancel := context.WithTimeout(rctx.GetInitCtx(), time.Second*3)
 	err := client.Ping(ctx).Err()
 	cancel()

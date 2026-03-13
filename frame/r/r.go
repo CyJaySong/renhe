@@ -3,14 +3,18 @@
 package r
 
 import (
+	"context"
+
 	"github.com/cyjaysong/renhe/database/rdb"
 	"github.com/cyjaysong/renhe/database/redis"
 	"github.com/cyjaysong/renhe/net/rhttp"
 	"github.com/cyjaysong/renhe/os/rcfg"
 	"github.com/cyjaysong/renhe/os/rlog"
+	"github.com/cyjaysong/renhe/os/rotrace"
 	"github.com/cyjaysong/renhe/util/rvalid"
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // parseName 解析可选的实例名称参数，默认返回 "default"。
@@ -54,4 +58,14 @@ func DB(name ...string) *rdb.DB {
 // Redis 返回指定名称的 Redis 单例，默认 "default"。
 func Redis(name ...string) *redis.Redis {
 	return redis.Database(parseName(name))
+}
+
+// InitTrace 初始化全局 TracerProvider（stdout exporter，开发调试用），返回 shutdown 函数。
+func InitTrace(ctx context.Context) func(context.Context) error {
+	return rotrace.Init(ctx)
+}
+
+// InitTraceWithExporter 初始化全局 TracerProvider，使用自定义 SpanExporter（生产环境推荐）。
+func InitTraceWithExporter(ctx context.Context, exp sdktrace.SpanExporter) func(context.Context) error {
+	return rotrace.InitWithExporter(ctx, exp)
 }
