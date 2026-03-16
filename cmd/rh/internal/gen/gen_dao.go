@@ -83,6 +83,7 @@ func RunDao(cfg DaoConfig) error {
 	}
 
 	tableImportPath := cfg.Module + "/" + filepath.ToSlash(filepath.Join(cfg.Path, cfg.TablePath))
+	entityImportPath := cfg.Module + "/" + filepath.ToSlash(filepath.Join(cfg.Path, cfg.EntityPath))
 
 	for _, table := range tables {
 		cols, err := queryColumns(db, cfg.Schema, table)
@@ -115,7 +116,7 @@ func RunDao(cfg DaoConfig) error {
 		fmt.Printf("  generated: %s (table/internal)\n", internalFile)
 
 		// Generate table
-		tableCode := generateTableFile(table, filepath.Base(cfg.TablePath), tableImportPath)
+		tableCode := generateTableFile(table, filepath.Base(cfg.TablePath), tableImportPath, entityImportPath)
 		tableFile := filepath.Join(tableDir, table+".go")
 		if err := writeFormatted(tableFile, tableCode); err != nil {
 			return fmt.Errorf("failed to write %s: %w", tableFile, err)

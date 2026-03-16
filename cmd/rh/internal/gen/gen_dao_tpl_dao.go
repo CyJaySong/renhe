@@ -44,12 +44,17 @@ const tableTpl = `// ===========================================================
 package {{.Pkg}}
 
 import (
+	"{{.EntityImportPath}}"
 	"{{.TableImportPath}}/internal"
 )
 
 var {{.PascalName}} = &{{.CamelName}}Table{}
 
 type {{.CamelName}}Table struct{}
+
+func (*{{.CamelName}}Table) Model() *ent.{{.PascalName}} {
+	return (*ent.{{.PascalName}})(nil)
+}
 
 func (*{{.CamelName}}Table) Table() string {
 	return internal.{{.PascalName}}Table

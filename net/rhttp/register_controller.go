@@ -122,7 +122,7 @@ func echoHandler(funcType reflect.Type, funcItem reflect.Value) echo.HandlerFunc
 	return func(ctx echo.Context) (err error) {
 		bizReq := reflect.New(funcType.In(1).Elem())
 		if err = ctx.Bind(bizReq.Interface()); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
 		// 校验入参（ValidationErrors 由 ValidationMiddleware 统一处理）
 		if err = ctx.Validate(bizReq.Interface()); err != nil {

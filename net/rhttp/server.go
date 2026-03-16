@@ -1,7 +1,6 @@
 package rhttp
 
 import (
-	"github.com/cyjaysong/renhe/net/rhttp/middleware"
 	"github.com/cyjaysong/renhe/os/rlog"
 	"github.com/cyjaysong/renhe/os/rotrace"
 	"github.com/cyjaysong/renhe/util/rvalid"
@@ -23,6 +22,5 @@ func New() *HttpSrv {
 	echoEngine.Validator = rvalid.Instance()
 	echoEngine.Logger = rlog.Log().EchoLogger()
 	echoEngine.Use(otelecho.Middleware(rotrace.ServiceName()))
-	echoEngine.Use(middleware.ValidationMiddleware())
 	return &HttpSrv{Echo: echoEngine, Cfg: cfg}
 }

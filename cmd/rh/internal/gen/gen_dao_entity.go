@@ -64,8 +64,16 @@ func generateEntityCode(table string, columns []columnInfo, pkg, jsonCase string
 		})
 	}
 
+	// 模板中已硬编码的 import，不再重复加入 ExtraImports
+	builtinImports := map[string]struct{}{
+		"encoding/json":          {},
+		"time":                   {},
+		"github.com/uptrace/bun": {},
+	}
 	for imp := range extraImportSet {
-		data.ExtraImports = append(data.ExtraImports, imp)
+		if _, builtin := builtinImports[imp]; !builtin {
+			data.ExtraImports = append(data.ExtraImports, imp)
+		}
 	}
 
 	var buf bytes.Buffer

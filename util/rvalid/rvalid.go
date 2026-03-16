@@ -3,6 +3,7 @@
 package rvalid
 
 import (
+	"fmt"
 	"github.com/go-playground/validator/v10"
 	zhTrans "github.com/go-playground/validator/v10/translations/zh"
 	"sync"
@@ -23,11 +24,15 @@ type Validator struct {
 func Instance() *Validator {
 	once.Do(func() {
 		v1 := validator.New(validator.WithRequiredStructEnabled())
-		_ = zhTrans.RegisterDefaultTranslations(v1, zhTranslator)
+		if err := zhTrans.RegisterDefaultTranslations(v1, zhTranslator1); err != nil {
+			fmt.Println(err)
+		}
 		v1.SetTagName("v")
 
 		v2 := validator.New(validator.WithRequiredStructEnabled())
-		_ = zhTrans.RegisterDefaultTranslations(v2, zhTranslator)
+		if err := zhTrans.RegisterDefaultTranslations(v2, zhTranslator2); err != nil {
+			fmt.Println(err)
+		}
 		v2.SetTagName("v2")
 
 		instance = &Validator{v1: v1, v2: v2}

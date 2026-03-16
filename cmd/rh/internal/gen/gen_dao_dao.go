@@ -21,10 +21,11 @@ type daoInternalField struct {
 }
 
 type tableFileData struct {
-	Pkg             string
-	PascalName      string
-	CamelName       string
-	TableImportPath string
+	Pkg              string
+	PascalName       string
+	CamelName        string
+	TableImportPath  string
+	EntityImportPath string
 }
 
 func generateDaoInternal(table string, cols []columnInfo) string {
@@ -54,13 +55,14 @@ func generateDaoInternal(table string, cols []columnInfo) string {
 	return buf.String()
 }
 
-func generateTableFile(table, pkg, tableImportPath string) string {
+func generateTableFile(table, pkg, tableImportPath, entityImportPath string) string {
 	pascal := ToPascalCase(table)
 	data := tableFileData{
-		Pkg:             pkg,
-		PascalName:      pascal,
-		CamelName:       toCamelCase(pascal),
-		TableImportPath: tableImportPath,
+		Pkg:              pkg,
+		PascalName:       pascal,
+		CamelName:        toCamelCase(pascal),
+		TableImportPath:  tableImportPath,
+		EntityImportPath: entityImportPath,
 	}
 
 	var buf bytes.Buffer
