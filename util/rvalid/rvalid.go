@@ -4,9 +4,13 @@ package rvalid
 
 import (
 	"fmt"
+	"sync"
+
+	"github.com/cyjaysong/renhe/util/rvalid/custom"
+	ut "github.com/go-playground/universal-translator"
+
 	"github.com/go-playground/validator/v10"
 	zhTrans "github.com/go-playground/validator/v10/translations/zh"
-	"sync"
 )
 
 var (
@@ -24,20 +28,50 @@ type Validator struct {
 func Instance() *Validator {
 	once.Do(func() {
 		v1 := validator.New(validator.WithRequiredStructEnabled())
+		v1.SetTagName("v")
 		if err := zhTrans.RegisterDefaultTranslations(v1, zhTranslator1); err != nil {
 			fmt.Println(err)
 		}
-		v1.SetTagName("v")
+		if err := initRegister(v1, zhTranslator1); err != nil {
+			fmt.Println(err)
+		}
 
 		v2 := validator.New(validator.WithRequiredStructEnabled())
+		v2.SetTagName("v2")
 		if err := zhTrans.RegisterDefaultTranslations(v2, zhTranslator2); err != nil {
 			fmt.Println(err)
 		}
-		v2.SetTagName("v2")
+		if err := initRegister(v2, zhTranslator2); err != nil {
+			fmt.Println(err)
+		}
 
 		instance = &Validator{v1: v1, v2: v2}
 	})
 	return instance
+}
+
+func initRegister(validate *validator.Validate, zhTranslator ut.Translator) (err error) {
+	custom.RegisterDecimalType(validate)
+
+	if err = custom.RegisterChineseIDValidation(validate, zhTranslator); err != nil {
+		return
+	}
+	if err = custom.RegisterChineseValidation(validate, zhTranslator); err != nil {
+		return
+	}
+	if err = custom.RegisterDigitsValidation(validate, zhTranslator); err != nil {
+		return
+	}
+	if err = custom.RegisterEmojiValidation(validate, zhTranslator); err != nil {
+		return
+	}
+	if err = custom.RegisterHanziValidation(validate, zhTranslator); err != nil {
+		return
+	}
+	if err = custom.RegisterPhoneValidation(validate, zhTranslator); err != nil {
+		return
+	}
+	return
 }
 
 func (v *Validator) V() *validator.Validate {

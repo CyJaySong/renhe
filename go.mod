@@ -2,9 +2,8 @@ module github.com/cyjaysong/renhe
 
 go 1.25.0
 
-replace github.com/go-playground/validator/v10 => /Volumes/Project/GoProject/go-validator
-
 require (
+	github.com/Andrew-M-C/go.emoji v1.1.4
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.30.1
@@ -15,6 +14,7 @@ require (
 	github.com/labstack/gommon v0.4.2
 	github.com/redis/go-redis/extra/redisotel/v9 v9.18.0
 	github.com/redis/go-redis/v9 v9.18.0
+	github.com/shopspring/decimal v1.4.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/uptrace/bun v1.2.18
