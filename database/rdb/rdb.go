@@ -64,8 +64,8 @@ func newDB(name string, cfg Config) (*DB, error) {
 			return nil, fmt.Errorf("rdb: failed to open slave[%d]: %w", i, err)
 		}
 		slaveBun := bun.NewDB(sqlDb, pgdialect.New())
-		masterBun = masterBun.WithQueryHook(bunOtelHook)
-		masterBun = masterBun.WithQueryHook(bunQueryHookForLog)
+		slaveBun = slaveBun.WithQueryHook(bunOtelHook)
+		slaveBun = slaveBun.WithQueryHook(bunQueryHookForLog)
 		node := &slaveNode{dsn: dsn, db: slaveBun}
 		node.healthy.Store(true)
 		d.slaves = append(d.slaves, node)
