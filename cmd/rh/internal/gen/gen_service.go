@@ -4,14 +4,16 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
-	"go/format"
 	"go/parser"
 	"go/printer"
 	"go/token"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
+
+	"golang.org/x/tools/imports"
 )
 
 type ServiceConfig struct {
@@ -98,38 +100,46 @@ func parseLogicPackage(dir, pkgName, module string) (*servicePackageInfo, error)
 	importSet := make(map[string]bool)
 
 	for _, pkg := range pkgs {
-		for _, file := range pkg.Files {
-			fileImports := collectFileImports(file)
-			for _, method := range extractMethods(fset, file, fileImports, importSet) {
+		fileNames := make([]string, 0, len(pkg.Files))
+		for name := range pkg.Files {
+			fileNames = append(fileNames, name)
+		}
+		sort.Strings(fileNames)
+		for _, name := range fileNames {
+			file := pkg.Files[name]
+			for _, imp := range collectFileImports(file) {
+				if !importSet[imp] {
+					importSet[imp] = true
+					info.Imports = append(info.Imports, imp)
+				}
+			}
+			for _, method := range extractMethods(fset, file) {
 				info.Methods = append(info.Methods, method)
 			}
 		}
 	}
 
-	for imp := range importSet {
-		info.Imports = append(info.Imports, imp)
-	}
-
 	return info, nil
 }
 
-func collectFileImports(file *ast.File) map[string]string {
-	imports := make(map[string]string)
+func collectFileImports(file *ast.File) []string {
+	var result []string
 	for _, imp := range file.Imports {
-		path := strings.Trim(imp.Path.Value, "\"")
-		var name string
-		if imp.Name != nil {
-			name = imp.Name.Name
-		} else {
-			parts := strings.Split(path, "/")
-			name = parts[len(parts)-1]
+		if imp.Name != nil && imp.Name.Name == "_" {
+			continue
 		}
-		imports[name] = path
+		var decl string
+		if imp.Name != nil {
+			decl = imp.Name.Name + " " + imp.Path.Value
+		} else {
+			decl = imp.Path.Value
+		}
+		result = append(result, decl)
 	}
-	return imports
+	return result
 }
 
-func extractMethods(fset *token.FileSet, file *ast.File, fileImports map[string]string, importSet map[string]bool) []serviceMethod {
+func extractMethods(fset *token.FileSet, file *ast.File) []serviceMethod {
 	var methods []serviceMethod
 
 	for _, decl := range file.Decls {
@@ -138,12 +148,23 @@ func extractMethods(fset *token.FileSet, file *ast.File, fileImports map[string]
 			continue
 		}
 
-		params := formatFieldList(fset, fn.Type.Params, fileImports, importSet)
-		results := formatFieldList(fset, fn.Type.Results, fileImports, importSet)
+		params := formatFieldList(fset, fn.Type.Params)
+		results := formatFieldList(fset, fn.Type.Results)
 
 		resultStr := results
-		if fn.Type.Results != nil && len(fn.Type.Results.List) > 1 {
-			resultStr = "(" + results + ")"
+		if fn.Type.Results != nil && len(fn.Type.Results.List) > 0 {
+			needParen := len(fn.Type.Results.List) > 1
+			if !needParen {
+				for _, field := range fn.Type.Results.List {
+					if len(field.Names) > 0 {
+						needParen = true
+						break
+					}
+				}
+			}
+			if needParen {
+				resultStr = "(" + results + ")"
+			}
 		}
 
 		methods = append(methods, serviceMethod{
@@ -155,7 +176,7 @@ func extractMethods(fset *token.FileSet, file *ast.File, fileImports map[string]
 	return methods
 }
 
-func formatFieldList(fset *token.FileSet, fl *ast.FieldList, fileImports map[string]string, importSet map[string]bool) string {
+func formatFieldList(fset *token.FileSet, fl *ast.FieldList) string {
 	if fl == nil || len(fl.List) == 0 {
 		return ""
 	}
@@ -163,8 +184,6 @@ func formatFieldList(fset *token.FileSet, fl *ast.FieldList, fileImports map[str
 	var parts []string
 	for _, field := range fl.List {
 		typeStr := exprToString(fset, field.Type)
-		collectImportsFromExpr(field.Type, fileImports, importSet)
-
 		if len(field.Names) == 0 {
 			parts = append(parts, typeStr)
 		} else {
@@ -180,23 +199,6 @@ func exprToString(fset *token.FileSet, expr ast.Expr) string {
 	var buf bytes.Buffer
 	printer.Fprint(&buf, fset, expr)
 	return buf.String()
-}
-
-func collectImportsFromExpr(expr ast.Expr, fileImports map[string]string, importSet map[string]bool) {
-	ast.Inspect(expr, func(n ast.Node) bool {
-		sel, ok := n.(*ast.SelectorExpr)
-		if !ok {
-			return true
-		}
-		ident, ok := sel.X.(*ast.Ident)
-		if !ok {
-			return true
-		}
-		if path, exists := fileImports[ident.Name]; exists {
-			importSet[path] = true
-		}
-		return true
-	})
 }
 
 func renderServiceFile(info *servicePackageInfo) (string, error) {
@@ -234,9 +236,9 @@ func generateLogicEntry(srcPath string, pkgPaths []string) error {
 }
 
 func writeFormattedService(path, code string) error {
-	formatted, err := format.Source([]byte(code))
+	formatted, err := imports.Process(path, []byte(code), nil)
 	if err != nil {
-		return os.WriteFile(path, []byte(code), 0644)
+		return fmt.Errorf("format %s: %w", path, err)
 	}
 	return os.WriteFile(path, formatted, 0644)
 }

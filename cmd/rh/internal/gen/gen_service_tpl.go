@@ -8,10 +8,10 @@ package service
 {{if .Imports}}
 import (
 {{- range .Imports}}
-	"{{.}}"
+	{{.}}
 {{- end}}
 )
-{{end}}
+{{- end}}
 
 type I{{.PascalName}} interface {
 {{- range .Methods}}
