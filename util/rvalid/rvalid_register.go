@@ -24,8 +24,8 @@ func (v *Validator) RegisterStructValidation(fn validator.StructLevelFunc, types
 	v.v2.RegisterStructValidation(fn, types...)
 }
 
-// RegisterTranslation 同时向两组验证器注册中文翻译。
-func (v *Validator) RegisterTranslation(tag string, registerFn validator.RegisterTranslationsFunc, translationFn validator.TranslationFunc) (err error) {
+// RegisterZhTranslation 同时向两组验证器注册中文翻译。
+func (v *Validator) RegisterZhTranslation(tag string, registerFn validator.RegisterTranslationsFunc, translationFn validator.TranslationFunc) (err error) {
 	if err = v.v1.RegisterTranslation(tag, zhTranslator1, registerFn, translationFn); err != nil {
 		return
 	}

@@ -1,9 +1,11 @@
 package rvalid
 
 import (
+	"errors"
 	zhLocales "github.com/go-playground/locales/zh"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
+	"strings"
 )
 
 var zhTranslator1 ut.Translator
@@ -28,7 +30,7 @@ func ZhTranslate(fe validator.FieldError) string {
 // TranslateAll 将验证错误批量翻译为中文，返回 字段名→中文消息 的映射。
 // 若 err 不是 ValidationErrors 类型，返回 nil。
 func TranslateAll(err error) map[string]string {
-	errs, ok := err.(validator.ValidationErrors)
+	errs, ok := errors.AsType[validator.ValidationErrors](err)
 	if !ok {
 		return nil
 	}
@@ -39,13 +41,27 @@ func TranslateAll(err error) map[string]string {
 	return result
 }
 
+// TranslateAllStr 将验证错误批量翻译为中文，返回 中文 `消息1;消息2` 的映射。
+// 若 err 不是 ValidationErrors 类型，返回 空字符串。
+func TranslateAllStr(err error) string {
+	errs, ok := errors.AsType[validator.ValidationErrors](err)
+	if !ok {
+		return ""
+	}
+	result := make([]string, len(errs))
+	for i, fe := range errs {
+		result[i] = ZhTranslate(fe)
+	}
+	return strings.Join(result, ";")
+}
+
 // FirstError 从验证错误中提取第一条中文错误消息。
 // 若 err 为 nil 或不是 ValidationErrors 类型，返回空字符串。
 func FirstError(err error) string {
 	if err == nil {
 		return ""
 	}
-	errs, ok := err.(validator.ValidationErrors)
+	errs, ok := errors.AsType[validator.ValidationErrors](err)
 	if !ok {
 		return err.Error()
 	}
