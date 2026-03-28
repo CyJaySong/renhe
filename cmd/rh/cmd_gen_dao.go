@@ -35,6 +35,9 @@ Configuration (hack/config.yaml):
           doPath:       DO sub-path relative to path (default: "model/do")
           entityPath:   Entity sub-path relative to path (default: "model/ent")
           jsonCase:     JSON tag naming: Snake / CamelLower / Camel (default: "Snake")
+          entityFieldEx: Exclude specific fields from entity generation.
+                        Format: "table.field" or "*.field" (wildcard for all tables), comma-separated.
+                        Example: "user.password, *.deleted_at"
           typeMapping:  Map DB column types to custom Go types globally.
                         Each key is a DB type name (e.g. numeric, jsonb).
                         Value has "type" (Go type) and optional "import" (package path).
@@ -87,16 +90,17 @@ func runGenDao(cmd *cobra.Command, args []string) error {
 		}
 
 		genCfg := gen.DaoConfig{
-			DSN:        dsn,
-			Schema:     dc.Schema,
-			Tables:     dc.Tables,
-			TablesEx:   dc.TablesEx,
-			Path:       dc.Path,
-			TablePath:  dc.TablePath,
-			DoPath:     dc.DoPath,
-			EntityPath: dc.EntityPath,
-			JsonCase:   dc.JsonCase,
-			Module:     module,
+			DSN:           dsn,
+			Schema:        dc.Schema,
+			Tables:        dc.Tables,
+			TablesEx:      dc.TablesEx,
+			Path:          dc.Path,
+			TablePath:     dc.TablePath,
+			DoPath:        dc.DoPath,
+			EntityPath:    dc.EntityPath,
+			JsonCase:      dc.JsonCase,
+			Module:        module,
+			EntityFieldEx: dc.EntityFieldEx,
 		}
 		// 转换 config.TypeMappingItem → gen.TypeMappingItem
 		if len(dc.TypeMapping) > 0 {

@@ -34,17 +34,18 @@ type TypeMappingItem struct {
 }
 
 type GenDaoConfig struct {
-	Link         string                     `yaml:"link"`
-	Tables       string                     `yaml:"tables"`
-	TablesEx     string                     `yaml:"tablesEx"`
-	Schema       string                     `yaml:"schema"`
-	Path         string                     `yaml:"path"`
-	TablePath    string                     `yaml:"tablePath"`
-	DoPath       string                     `yaml:"doPath"`
-	EntityPath   string                     `yaml:"entityPath"`
-	JsonCase     string                     `yaml:"jsonCase"`
-	TypeMapping  map[string]TypeMappingItem `yaml:"typeMapping"`  // 按数据库类型名全局映射，如 numeric → decimal.Decimal
-	FieldMapping map[string]TypeMappingItem `yaml:"fieldMapping"` // 按 表名.字段名 精确映射，优先级高于 typeMapping
+	Link          string                     `yaml:"link"`
+	Tables        string                     `yaml:"tables"`
+	TablesEx      string                     `yaml:"tablesEx"`
+	Schema        string                     `yaml:"schema"`
+	Path          string                     `yaml:"path"`
+	TablePath     string                     `yaml:"tablePath"`
+	DoPath        string                     `yaml:"doPath"`
+	EntityPath    string                     `yaml:"entityPath"`
+	JsonCase      string                     `yaml:"jsonCase"`
+	EntityFieldEx string                     `yaml:"entityFieldEx"` // 生成 entity 时排除的字段，格式: "表名.字段名" 或 "*.字段名"，逗号分隔
+	TypeMapping   map[string]TypeMappingItem `yaml:"typeMapping"`   // 按数据库类型名全局映射，如 numeric → decimal.Decimal
+	FieldMapping  map[string]TypeMappingItem `yaml:"fieldMapping"`  // 按 表名.字段名 精确映射，优先级高于 typeMapping
 }
 
 func Load(path string) (*Config, error) {

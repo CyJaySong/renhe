@@ -19,18 +19,19 @@ type TypeMappingItem struct {
 }
 
 type DaoConfig struct {
-	DSN          string
-	Schema       string
-	Tables       string
-	TablesEx     string
-	Path         string
-	TablePath    string
-	DoPath       string
-	EntityPath   string
-	JsonCase     string
-	Module       string
-	TypeMapping  map[string]TypeMappingItem // 按数据库类型名全局映射
-	FieldMapping map[string]TypeMappingItem // 按 表名.字段名 精确映射
+	DSN           string
+	Schema        string
+	Tables        string
+	TablesEx      string
+	Path          string
+	TablePath     string
+	DoPath        string
+	EntityPath    string
+	JsonCase      string
+	Module        string
+	EntityFieldEx string                     // 生成 entity 时排除的字段
+	TypeMapping   map[string]TypeMappingItem // 按数据库类型名全局映射
+	FieldMapping  map[string]TypeMappingItem // 按 表名.字段名 精确映射
 }
 
 type columnInfo struct {
@@ -100,7 +101,7 @@ func RunDao(cfg DaoConfig) error {
 		fmt.Printf("  generated: %s (do)\n", doFile)
 
 		// Generate entity
-		entityCode := generateEntityCode(table, cols, filepath.Base(cfg.EntityPath), cfg.JsonCase, cfg.TypeMapping, cfg.FieldMapping)
+		entityCode := generateEntityCode(table, cols, filepath.Base(cfg.EntityPath), cfg.JsonCase, cfg.TypeMapping, cfg.FieldMapping, cfg.EntityFieldEx)
 		entityFile := filepath.Join(entityDir, table+".go")
 		if err := writeFormatted(entityFile, entityCode); err != nil {
 			return fmt.Errorf("failed to write %s: %w", entityFile, err)

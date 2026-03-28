@@ -26,7 +26,7 @@ type entityField struct {
 	Comment string
 }
 
-func generateEntityCode(table string, columns []columnInfo, pkg, jsonCase string, typeMapping, fieldMapping map[string]TypeMappingItem) string {
+func generateEntityCode(table string, columns []columnInfo, pkg, jsonCase string, typeMapping, fieldMapping map[string]TypeMappingItem, entityFieldEx string) string {
 	data := entityData{
 		Pkg:        pkg,
 		StructName: ToPascalCase(table),
@@ -35,8 +35,12 @@ func generateEntityCode(table string, columns []columnInfo, pkg, jsonCase string
 	}
 
 	extraImportSet := make(map[string]struct{})
+	excludedFields := parseEntityFieldEx(entityFieldEx)
 
 	for _, c := range columns {
+		if isFieldExcluded(table, c.Name, excludedFields) {
+			continue
+		}
 		goType, importPath := resolveGoType(table, c, typeMapping, fieldMapping)
 		if goType == "time.Time" || goType == "*time.Time" {
 			data.NeedsTime = true
@@ -206,4 +210,48 @@ func cleanDefault(raw string) string {
 	// 去除单引号包裹
 	v = strings.Trim(v, "'")
 	return v
+}
+
+// entityFieldExRule 表示一条字段排除规则。
+type entityFieldExRule struct {
+	Table string // 表名，"*" 表示匹配所有表
+	Field string // 字段名
+}
+
+// parseEntityFieldEx 解析 entityFieldEx 配置字符串。
+// 格式: "表名.字段名, *.字段名"，逗号分隔，支持 * 通配表名。
+func parseEntityFieldEx(s string) []entityFieldExRule {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	rules := make([]entityFieldExRule, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		idx := strings.LastIndex(p, ".")
+		if idx < 0 {
+			continue
+		}
+		rules = append(rules, entityFieldExRule{
+			Table: strings.TrimSpace(p[:idx]),
+			Field: strings.TrimSpace(p[idx+1:]),
+		})
+	}
+	return rules
+}
+
+// isFieldExcluded 判断指定表的字段是否应被排除。
+func isFieldExcluded(table, field string, rules []entityFieldExRule) bool {
+	for _, r := range rules {
+		if r.Field != field {
+			continue
+		}
+		if r.Table == "*" || r.Table == table {
+			return true
+		}
+	}
+	return false
 }

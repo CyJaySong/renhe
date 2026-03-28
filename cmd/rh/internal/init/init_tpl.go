@@ -85,6 +85,18 @@ const hackConfigYamlTpl = `rh:
         entityPath: "model/ent"
         # JSON 标签命名风格: Snake / CamelLower / Camel
         jsonCase: "Snake"
+        # 生成 entity 时排除的字段，格式: "表名.字段名" 或 "*.字段名"，逗号分隔
+        # entityFieldEx: "user.password, *.deleted_at"
+        # 类型映射: 按数据库字段类型全局映射到 Go 类型
+        # typeMapping:
+        #   numeric:
+        #     type: "decimal.Decimal"
+        #     import: "github.com/shopspring/decimal"
+        # 字段映射: 按 表名.字段名 精确映射（优先级高于 typeMapping）
+        # fieldMapping:
+        #   user.other:
+        #     type: "map[string]any"
+        #     import: ""
     service:
       # logic 源码目录，扫描其子包提取公开方法生成接口
       srcPath: "internal/logic"
