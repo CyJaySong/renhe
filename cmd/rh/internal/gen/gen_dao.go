@@ -16,6 +16,7 @@ import (
 type TypeMappingItem struct {
 	Type   string // Go 类型名，如 decimal.Decimal
 	Import string // 需要导入的包路径
+	PkgAs  string // 导入包别名，如 decimalx
 }
 
 type DaoConfig struct {

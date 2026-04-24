@@ -26,11 +26,13 @@ rh:
         #   numeric:
         #     type: "decimal.Decimal"
         #     import: "github.com/shopspring/decimal"
+        #     pkgAs: "decimalx"
         # 字段映射: 按 表名.字段名 精确映射（优先级高于 typeMapping）
         # fieldMapping:
         #   user.other:
-        #     type: "map[string]any"
-        #     import: ""
+        #     type: "userex.Profile"
+        #     import: "example/internal/model/userex"
+        #     pkgAs: "userex"
     service:
       # logic 源码目录，扫描其子包提取公开方法生成接口
       srcPath: "internal/logic"

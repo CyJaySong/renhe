@@ -16,7 +16,11 @@ import (
 
 	"github.com/uptrace/bun"
 {{- range .ExtraImports}}
-	"{{.}}"
+{{- if .Alias}}
+	{{.Alias}} "{{.Path}}"
+{{- else}}
+	"{{.Path}}"
+{{- end}}
 {{- end}}
 )
 

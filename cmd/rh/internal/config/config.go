@@ -31,6 +31,7 @@ type GenServiceConfig struct {
 type TypeMappingItem struct {
 	Type   string `yaml:"type"`   // Go 类型名，如 decimal.Decimal
 	Import string `yaml:"import"` // 需要导入的包路径，如 github.com/shopspring/decimal
+	PkgAs  string `yaml:"pkgAs"`  // 导入包别名，如 decimalx
 }
 
 type GenDaoConfig struct {

@@ -3,6 +3,7 @@ package gen
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 	"text/template"
 )
@@ -14,8 +15,13 @@ type entityData struct {
 	NeedsTime    bool
 	NeedsBun     bool
 	NeedsJSON    bool
-	ExtraImports []string // 自定义 import 路径（来自 typeMapping/fieldMapping）
+	ExtraImports []entityImport // 自定义 import（来自 typeMapping/fieldMapping）
 	Fields       []entityField
+}
+
+type entityImport struct {
+	Alias string
+	Path  string
 }
 
 type entityField struct {
@@ -34,14 +40,14 @@ func generateEntityCode(table string, columns []columnInfo, pkg, jsonCase string
 		NeedsBun:   true,
 	}
 
-	extraImportSet := make(map[string]struct{})
+	extraImportSet := make(map[string]entityImport)
 	excludedFields := parseEntityFieldEx(entityFieldEx)
 
 	for _, c := range columns {
 		if isFieldExcluded(table, c.Name, excludedFields) {
 			continue
 		}
-		goType, importPath := resolveGoType(table, c, typeMapping, fieldMapping)
+		goType, importPath, importAlias := resolveGoType(table, c, typeMapping, fieldMapping)
 		if goType == "time.Time" || goType == "*time.Time" {
 			data.NeedsTime = true
 		}
@@ -49,7 +55,11 @@ func generateEntityCode(table string, columns []columnInfo, pkg, jsonCase string
 			data.NeedsJSON = true
 		}
 		if importPath != "" {
-			extraImportSet[importPath] = struct{}{}
+			// 同一路径重复出现时，优先保留带别名的导入配置。
+			importItem := entityImport{Alias: importAlias, Path: importPath}
+			if exists, ok := extraImportSet[importPath]; !ok || (exists.Alias == "" && importAlias != "") {
+				extraImportSet[importPath] = importItem
+			}
 		}
 
 		bunTag := buildBunTag(c)
@@ -74,9 +84,14 @@ func generateEntityCode(table string, columns []columnInfo, pkg, jsonCase string
 		"time":                   {},
 		"github.com/uptrace/bun": {},
 	}
+	importPaths := make([]string, 0, len(extraImportSet))
 	for imp := range extraImportSet {
+		importPaths = append(importPaths, imp)
+	}
+	sort.Strings(importPaths)
+	for _, imp := range importPaths {
 		if _, builtin := builtinImports[imp]; !builtin {
-			data.ExtraImports = append(data.ExtraImports, imp)
+			data.ExtraImports = append(data.ExtraImports, extraImportSet[imp])
 		}
 	}
 
@@ -87,24 +102,24 @@ func generateEntityCode(table string, columns []columnInfo, pkg, jsonCase string
 }
 
 // resolveGoType 解析字段的 Go 类型，优先级：fieldMapping > typeMapping > 默认推导。
-func resolveGoType(table string, c columnInfo, typeMapping, fieldMapping map[string]TypeMappingItem) (goType, importPath string) {
+func resolveGoType(table string, c columnInfo, typeMapping, fieldMapping map[string]TypeMappingItem) (goType, importPath, importAlias string) {
 	// 1. fieldMapping: 表名.字段名 精确匹配
 	if fieldMapping != nil {
 		key := table + "." + c.Name
 		if m, ok := fieldMapping[key]; ok {
-			return m.Type, m.Import
+			return m.Type, m.Import, m.PkgAs
 		}
 	}
 	// 2. typeMapping: 按数据库类型名匹配（同时检查 data_type 和 udt_name）
 	if typeMapping != nil {
 		for _, typeName := range []string{strings.ToLower(c.DataType), strings.ToLower(c.UdtName)} {
 			if m, ok := typeMapping[typeName]; ok {
-				return m.Type, m.Import
+				return m.Type, m.Import, m.PkgAs
 			}
 		}
 	}
 	// 3. 默认推导
-	return pgTypeToGo(c), ""
+	return pgTypeToGo(c), "", ""
 }
 
 // buildBunTag 根据列元信息生成 bun struct tag 值。

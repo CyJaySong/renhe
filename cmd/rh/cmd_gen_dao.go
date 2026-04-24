@@ -40,17 +40,22 @@ Configuration (hack/config.yaml):
                         Example: "user.password, *.deleted_at"
           typeMapping:  Map DB column types to custom Go types globally.
                         Each key is a DB type name (e.g. numeric, jsonb).
-                        Value has "type" (Go type) and optional "import" (package path).
+                        Value has "type" (Go type), optional "import" (package path),
+                        and optional "pkgAs" (import alias).
                         Example:
                           numeric:
                             type: "decimal.Decimal"
                             import: "github.com/shopspring/decimal"
+                            pkgAs: "decimalx"
           fieldMapping: Map specific table.column to custom Go types (higher priority than typeMapping).
                         Each key is "table_name.column_name".
-                        Value has "type" (Go type) and optional "import" (package path).
+                        Value has "type" (Go type), optional "import" (package path),
+                        and optional "pkgAs" (import alias).
                         Example:
                           user.other:
-                            type: "map[string]any"
+                            type: "userex.Profile"
+                            import: "example/internal/model/userex"
+                            pkgAs: "userex"
 
 Multiple database configurations are supported as a YAML list.`,
 	RunE: runGenDao,
@@ -106,13 +111,13 @@ func runGenDao(cmd *cobra.Command, args []string) error {
 		if len(dc.TypeMapping) > 0 {
 			genCfg.TypeMapping = make(map[string]gen.TypeMappingItem, len(dc.TypeMapping))
 			for k, v := range dc.TypeMapping {
-				genCfg.TypeMapping[k] = gen.TypeMappingItem{Type: v.Type, Import: v.Import}
+				genCfg.TypeMapping[k] = gen.TypeMappingItem{Type: v.Type, Import: v.Import, PkgAs: v.PkgAs}
 			}
 		}
 		if len(dc.FieldMapping) > 0 {
 			genCfg.FieldMapping = make(map[string]gen.TypeMappingItem, len(dc.FieldMapping))
 			for k, v := range dc.FieldMapping {
-				genCfg.FieldMapping[k] = gen.TypeMappingItem{Type: v.Type, Import: v.Import}
+				genCfg.FieldMapping[k] = gen.TypeMappingItem{Type: v.Type, Import: v.Import, PkgAs: v.PkgAs}
 			}
 		}
 

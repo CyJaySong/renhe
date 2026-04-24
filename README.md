@@ -115,7 +115,7 @@ rh gen dao
 rh gen service
 ```
 
-代码生成配置通过 `hack/config.yaml` 管理，支持 `typeMapping` 和 `fieldMapping` 自定义类型映射。
+代码生成配置通过 `hack/config.yaml` 管理，支持 `typeMapping` 和 `fieldMapping` 自定义类型映射，也支持通过 `pkgAs` 为导入包指定别名。
 
 ## 核心依赖
 
