@@ -121,6 +121,9 @@ func echoHandlerRegister[T *echo.Echo | *echo.Group](echoOrGroup T, methods []st
 func echoHandler(funcType reflect.Type, funcItem reflect.Value) echo.HandlerFunc {
 	return func(ctx echo.Context) (err error) {
 		bizReq := reflect.New(funcType.In(1).Elem())
+		if err = ctx.Echo().Binder.(*echo.DefaultBinder).BindHeaders(ctx, bizReq.Interface()); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
+		}
 		if err = ctx.Bind(bizReq.Interface()); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error()).SetInternal(err)
 		}
