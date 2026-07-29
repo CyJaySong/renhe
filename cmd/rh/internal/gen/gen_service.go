@@ -87,7 +87,9 @@ func RunService(cfg ServiceConfig) error {
 
 func parseLogicPackage(dir, pkgName, module string) (*servicePackageInfo, error) {
 	fset := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fset, dir, nil, parser.ParseComments)
+	pkgs, err := parser.ParseDir(fset, dir, func(fi os.FileInfo) bool {
+		return !strings.HasSuffix(fi.Name(), "_test.go")
+	}, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
