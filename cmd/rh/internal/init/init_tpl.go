@@ -23,29 +23,38 @@ func main() {
 const cmdGoTpl = `package cmd
 
 import (
+	"{{.FrameworkModule}}/frame/r"
 	"{{.FrameworkModule}}/net/rhttp"
-	"github.com/cyjaysong/renhe/frame/r"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"{{.FrameworkModule}}/os/rctx"
+	"github.com/labstack/echo/v5/middleware"
 )
 
 var Main = &struct {
 	Run func()
 }{
 	Run: func() {
+		// Trace 由配置 trace.enable 自动启停；退出时统一收尾
+		defer r.Close()
+
 		httpSrv := r.HttpSrv()
-		httpSrv.Use(middleware.Recover())
+		httpSrv.Use(
+			middleware.Recover(),
+			rhttp.WriteBizResJSON(),
+		)
 
 		api := httpSrv.Group("/api")
 		rhttp.EchoRegisterCtrlPointers(api)
 
-		httpSrv.Logger.Fatal(httpSrv.Start(":8000"))
+		if err := httpSrv.Run(); err != nil {
+			r.Log().Fatal(rctx.GetInitCtx(), "http server run failed", "err", err)
+		}
 	},
 }
 `
 
-const configYamlTpl = `server:
+const configYamlTpl = `httpSrv:
   address: ":8000"
+  # gracefulTimeout: "10s"    # SIGTERM 后等待进行中请求的时间（默认 10s）
 
 database:
   default:
@@ -54,14 +63,35 @@ database:
     maxIdleConns: 5
     connMaxLifetime: "1h"
     connMaxIdleTime: "30m"
-    # 数据库连接 DSN
+    # 数据库连接 DSN（启动时会 Ping）
     dsn: "postgres://postgres:password@127.0.0.1:5432/dbname?sslmode=disable"
+    # slowQueryThreshold: "5s"  # 慢查询阈值；负数关闭慢查询标记
+    # healthCheckInterval: "5s"
+    # pingTimeout: "3s"
     # 从库 DSN 列表（可选，支持多个从库读写分离）
     # slave:
     #   - "postgres://postgres:password@127.0.0.1:5433/dbname?sslmode=disable"
 
+# redis:
+#   default:
+#     address: ["127.0.0.1:6379"]
+#     # mode: auto              # standalone | cluster | auto（默认 auto）
+#     db: 0
+
 logger:
-  level: "info"
+  level: "info"            # debug/info/warn/error
+  format: "text"           # text/json
+  output: "console"        # console/file/both
+  stack: false             # Error/Fatal/Panic 是否追加完整调用栈
+
+# trace:
+#   enable: true
+#   exporter: stdout           # stdout | otlp | otlphttp | none
+#   # otlp:
+#   #   endpoint: "localhost:4318"
+#   #   insecure: true
+#   serviceName: "my-service"
+#   sampler: 1.0
 `
 
 const hackConfigYamlTpl = `rh:
@@ -108,7 +138,7 @@ const hackConfigYamlTpl = `rh:
 
 const goModTpl = `module {{.Module}}
 
-go 1.24.12
+go 1.25.0
 
 require (
 	github.com/cyjaysong/renhe v0.0.0

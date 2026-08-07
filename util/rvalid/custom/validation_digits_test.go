@@ -108,6 +108,36 @@ func TestValidateDigitsTag(t *testing.T) {
 	}
 }
 
+func TestValidateDigitsString(t *testing.T) {
+	TestRegisterDigitsValidation(t)
+
+	type testStruct struct {
+		Amount string `v:"digits=2.2"`
+	}
+
+	tests := []struct {
+		name    string
+		val     string
+		wantErr bool
+	}{
+		{"ok", "12.34", false},
+		{"ok_negative", "-12.34", false},
+		{"ok_zero_int", "0.12", false},
+		{"fail_int_too_long", "123.45", true},
+		{"fail_frac_too_long", "12.345", true},
+		{"fail_not_number", "not-a-number", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := testStruct{Amount: tt.val}
+			err := validate.Struct(s)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validate(%q) err=%v, wantErr=%v", tt.val, err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestValidateDigitsFracOnly(t *testing.T) {
 	TestRegisterDigitsValidation(t)
 

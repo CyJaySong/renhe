@@ -1,5 +1,6 @@
 httpSrv:
   address: ":8000"
+  # gracefulTimeout: "10s"    # SIGTERM 后等待进行中请求（默认 10s）
 
 database:
   default:
@@ -8,8 +9,11 @@ database:
     maxIdleConns: 5
     connMaxLifetime: "1h"
     connMaxIdleTime: "30m"
-    # 数据库连接 DSN
+    # 数据库连接 DSN（启动时会 Ping）
     dsn: "postgres://postgres:your_password@127.0.0.1:5432/test?sslmode=disable"
+    # slowQueryThreshold: "5s"  # 慢查询阈值；负数关闭慢查询标记
+    # healthCheckInterval: "5s"  # 主从健康检查间隔
+    # pingTimeout: "3s"          # 启动软 Ping / 健康检查超时
     # 从库 DSN 列表（可选，支持多个从库读写分离）
     # slave:
     #   - "postgres://postgres:password@127.0.0.1:5433/dbname?sslmode=disable"
@@ -18,6 +22,7 @@ redis:
   default:
     # 单机模式: 填1个地址; 集群模式: 填多个种子节点
     address: ["127.0.0.1:6379"]
+    # mode: auto              # standalone | cluster | auto（默认 auto：地址数>1 为集群）
     db: 0
     # username: ""
     # password: ""
@@ -32,16 +37,24 @@ redis:
     # writeTimeout: "3s"
 
 logger:
-  level: "info"            # trace/debug/info/notice/warn/error/fatal
+  level: "info"            # debug/info/warn/error
   format: "text"           # text/json
   output: "console"        # console/file/both
-  callerSkip: 7            # 调用栈跳过层数
-  stack: false             # Error/Warn/Fatal 级别是否追加完整调用栈
+  stack: false             # Error/Fatal/Panic 是否追加完整调用栈
   # file:                  # output 包含 file 时生效
   #   path: "logs/app.log" # 日志文件路径
   #   maxSize: 128         # 单文件最大 MB
-  #   rotateTime: "every_day"  # every_hour/every_day/every_30min/every_15min
+  #   rotateTime: "every_day"  # 兼容字段；当前按体积轮转
   #   backupNum: 20        # 保留旧文件数量
   #   backupTime: 168      # 保留旧文件最大小时数（168=7天）
   #   compress: false      # 是否 gzip 压缩
-  #   buffSize: 8192       # 写缓冲字节数，0 禁用
+  #   buffSize: 8192       # 兼容字段
+
+trace:
+  enable: true               # 自动 Init；false/缺省则不启 Trace
+  exporter: stdout           # stdout | otlp | otlphttp | none
+  # otlp:
+  #   endpoint: "localhost:4318"
+  #   insecure: true
+  serviceName: "example"
+  sampler: 1.0               # 0.0~1.0

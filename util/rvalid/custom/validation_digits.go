@@ -69,6 +69,11 @@ func validateDigits(fl validator.FieldLevel) bool {
 	field := fl.Field()
 	var f float64
 	switch field.Kind() {
+	case reflect.String:
+		var err error
+		if f, err = strconv.ParseFloat(field.String(), 64); err != nil {
+			return false
+		}
 	case reflect.Float32, reflect.Float64:
 		f = field.Float()
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:

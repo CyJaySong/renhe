@@ -6,23 +6,27 @@ import (
 	"time"
 
 	"github.com/cyjaysong/renhe/os/rctx"
+	"github.com/cyjaysong/renhe/os/rlog"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	goredis "github.com/redis/go-redis/v9"
 )
 
 // Redis 封装 go-redis UniversalClient，支持单机和集群模式。
-// 地址列表超过 1 个时自动启用集群模式。
+// 模式由 Config.Mode 控制（standalone / cluster / auto）。
 type Redis struct {
 	cfg  Config
 	name string
 	goredis.UniversalClient
 }
 
-// newRedis 根据配置创建 Redis 客户端，连接成功后执行 Ping 验证。
+// newRedis 根据配置创建 Redis 客户端。
+// 客户端创建 / OTel 注入失败才返回 error；Ping 为尽力而为：失败只 Warn，仍返回实例，
+// 便于 Redis 短暂不可达时保留连接池，恢复后自动重连（无需重启进程）。
 func newRedis(name string, cfg Config) (*Redis, error) {
+	cluster := cfg.isCluster()
 	opts := &goredis.UniversalOptions{
 		Addrs:           cfg.Address,
-		IsClusterMode:   len(cfg.Address) > 1,
+		IsClusterMode:   cluster,
 		DB:              cfg.DB,
 		Username:        cfg.Username,
 		Password:        cfg.Password,
@@ -42,12 +46,17 @@ func newRedis(name string, cfg Config) (*Redis, error) {
 		_ = client.Close()
 		return nil, fmt.Errorf("redis otel tracing: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(rctx.GetInitCtx(), time.Second*3)
-	err := client.Ping(ctx).Err()
+	// 尽力 Ping：失败不 Close、不阻断创建
+	ctx, cancel := context.WithTimeout(rctx.GetInitCtx(), 3*time.Second)
+	pingErr := client.Ping(ctx).Err()
 	cancel()
-	if err != nil {
-		_ = client.Close()
-		return nil, fmt.Errorf("redis ping failed: %w", err)
+	if pingErr != nil {
+		mode := "standalone"
+		if cluster {
+			mode = "cluster"
+		}
+		rlog.Log().Warn(ctx, "redis: ping failed, keep instance for auto-reconnect",
+			"name", name, "mode", mode, "address", cfg.Address, "err", pingErr)
 	}
 	return &Redis{cfg: cfg, name: name, UniversalClient: client}, nil
 }

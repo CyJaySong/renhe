@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/cyjaysong/renhe/os/rctx"
-
 	"github.com/cyjaysong/renhe/os/rlog"
 )
 
@@ -45,4 +44,16 @@ func Database(name ...string) *DB {
 	}
 	instances[n] = d
 	return d
+}
+
+// CloseAll 关闭所有已创建的数据库实例并清空单例缓存。
+func CloseAll() {
+	mu.Lock()
+	defer mu.Unlock()
+	for name, d := range instances {
+		if err := d.Close(); err != nil {
+			rlog.Log().Error(rctx.GetInitCtx(), "rdb: close failed", "name", name, "err", err)
+		}
+		delete(instances, name)
+	}
 }

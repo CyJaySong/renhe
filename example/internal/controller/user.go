@@ -2,14 +2,14 @@ package controller
 
 import (
 	"context"
-	"github.com/uptrace/bun"
 	"net/http"
 
 	"example/internal/model/ent"
 
 	"github.com/cyjaysong/renhe/database/rdb"
 	"github.com/cyjaysong/renhe/net/rhttp"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
+	"github.com/uptrace/bun"
 )
 
 type User struct{}
@@ -22,7 +22,7 @@ type UserListRes struct {
 	List []ent.User `json:"list"`
 }
 
-func (u *User) List(ctx echo.Context, req *UserListReq) (*UserListRes, error) {
+func (u *User) List(ctx *echo.Context, _ *UserListReq) (*UserListRes, error) {
 	var users []ent.User
 	db := rdb.Database()
 	err := db.NewSelect(ctx.Request().Context()).Model(&users).Scan(ctx.Request().Context())
@@ -41,7 +41,7 @@ type UserGetRes struct {
 	User ent.User `json:"user"`
 }
 
-func (u *User) Get(ctx echo.Context, req *UserGetReq) (*UserGetRes, error) {
+func (u *User) Get(ctx *echo.Context, req *UserGetReq) (*UserGetRes, error) {
 	var user ent.User
 	db := rdb.Database()
 	err := db.NewSelect(ctx.Request().Context()).Model(&user).Where("id = ?", req.Id).Scan(ctx.Request().Context())
@@ -61,7 +61,7 @@ type UserCreateRes struct {
 	User ent.User `json:"user"`
 }
 
-func (u *User) Create(ctx echo.Context, req *UserCreateReq) (*UserCreateRes, error) {
+func (u *User) Create(ctx *echo.Context, req *UserCreateReq) (*UserCreateRes, error) {
 	user := ent.User{
 		Phone:    req.Phone,
 		Nickname: req.Nickname,
@@ -84,7 +84,7 @@ type UserTxRes struct {
 	User ent.User `json:"user"`
 }
 
-func (u *User) TxDemo(ctx echo.Context, req *UserTxReq) (*UserTxRes, error) {
+func (u *User) TxDemo(ctx *echo.Context, req *UserTxReq) (*UserTxRes, error) {
 	db := rdb.Database()
 	var user ent.User
 

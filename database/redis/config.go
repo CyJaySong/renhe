@@ -2,10 +2,9 @@
 package redis
 
 import (
+	"fmt"
+	"strings"
 	"time"
-
-	"github.com/cyjaysong/renhe/os/rctx"
-	"github.com/cyjaysong/renhe/os/rlog"
 
 	"github.com/cyjaysong/renhe/os/rcfg"
 )
@@ -13,10 +12,12 @@ import (
 // Config Redis 连接配置。
 type Config struct {
 	// 地址列表: 单机模式填1个, 集群模式填多个种子节点
-	Address  []string `yaml:"address"`
-	DB       int      `yaml:"db"`       // 数据库索引(仅单机模式)
-	Username string   `yaml:"username"` // 访问授权用户
-	Password string   `yaml:"password"` // 访问授权密码
+	Address []string `yaml:"address"`
+	// Mode 连接模式: standalone | cluster | auto（默认 auto：地址数>1 为集群，兼容旧行为）
+	Mode     string `yaml:"mode"`
+	DB       int    `yaml:"db"`       // 数据库索引(仅单机模式)
+	Username string `yaml:"username"` // 访问授权用户
+	Password string `yaml:"password"` // 访问授权密码
 	// 连接池
 	MinIdleConns    int           `yaml:"minIdleConns"`    // 最小空闲连接数
 	MaxIdleConns    int           `yaml:"maxIdleConns"`    // 最大空闲连接数
@@ -30,24 +31,42 @@ type Config struct {
 	WriteTimeout time.Duration `yaml:"writeTimeout"` // TCP写超时
 }
 
+// isCluster 解析是否集群模式。
+func (c Config) isCluster() bool {
+	switch strings.ToLower(strings.TrimSpace(c.Mode)) {
+	case "cluster":
+		return true
+	case "standalone", "single":
+		return false
+	default:
+		// auto / 空：地址数 > 1 视为集群（兼容旧行为）
+		return len(c.Address) > 1
+	}
+}
+
 // loadConfig 从全局配置中读取 redis.<name> 下的 Redis 配置并反序列化。
-func loadConfig(name string) (cfg Config) {
+func loadConfig(name string) (cfg Config, err error) {
 	key := "redis." + name
 	allCfg := rcfg.Cfg()
 	if !allCfg.IsSet(key) {
-		rlog.Log().Warnf(rctx.GetInitCtx(), "config `%s` not found", key)
-		return
+		return Config{}, fmt.Errorf("config `%s` not found", key)
 	}
-	if sub := allCfg.Sub(key); sub == nil {
-		rlog.Log().Warnf(rctx.GetInitCtx(), "config `%s` is empty", key)
-		return Config{}
-	} else if err := sub.Unmarshal(&cfg, rcfg.YamlTagOption); err != nil {
-		rlog.Log().Warnf(rctx.GetInitCtx(), "config `%s`: unmarshal failed: %s", key, err)
-		return Config{}
+	sub := allCfg.Sub(key)
+	if sub == nil {
+		return Config{}, fmt.Errorf("config `%s` is empty", key)
+	}
+	if err = sub.Unmarshal(&cfg, rcfg.YamlTagOption); err != nil {
+		return Config{}, fmt.Errorf("config `%s`: unmarshal failed: %w", key, err)
 	}
 	if len(cfg.Address) == 0 {
-		rlog.Log().Warnf(rctx.GetInitCtx(), "config `%s`: address is required", key)
-		return Config{}
+		return Config{}, fmt.Errorf("config `%s`: address is required", key)
 	}
-	return
+	// 校验 mode 取值
+	switch m := strings.ToLower(strings.TrimSpace(cfg.Mode)); m {
+	case "", "auto", "standalone", "single", "cluster":
+		// ok
+	default:
+		return Config{}, fmt.Errorf("config `%s`: invalid mode %q (want standalone|cluster|auto)", key, cfg.Mode)
+	}
+	return cfg, nil
 }
