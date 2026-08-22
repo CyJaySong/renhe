@@ -41,6 +41,7 @@ type columnInfo struct {
 	UdtName          string
 	IsNullable       string
 	IsPrimary        bool
+	AutoIncrement    bool // 是否自增列（identity 或序列默认值）
 	HasDefault       bool
 	DefaultValue     string // 原始默认值表达式
 	Comment          string
@@ -243,6 +244,8 @@ SELECT
 	c.is_nullable,
 	COALESCE(c.column_default, '') != '' AS has_default,
 	COALESCE(c.column_default, '') AS default_value,
+	-- 自增判定：identity 列（GENERATED ... AS IDENTITY）或 serial 序列默认值
+	(c.is_identity = 'YES' OR COALESCE(c.column_default, '') LIKE 'nextval(%') AS is_auto_increment,
 	COALESCE(
 		(SELECT true FROM information_schema.table_constraints tc
 		 JOIN information_schema.key_column_usage kcu
@@ -285,7 +288,7 @@ ORDER BY c.ordinal_position`
 		var c columnInfo
 		if err := rows.Scan(
 			&c.Name, &c.DataType, &c.UdtName, &c.IsNullable,
-			&c.HasDefault, &c.DefaultValue, &c.IsPrimary, &c.Comment,
+			&c.HasDefault, &c.DefaultValue, &c.AutoIncrement, &c.IsPrimary, &c.Comment,
 			&c.MaxLength, &c.NumericPrecision, &c.NumericScale, &c.ElementType,
 		); err != nil {
 			return nil, err

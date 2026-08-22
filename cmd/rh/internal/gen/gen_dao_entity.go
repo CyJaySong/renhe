@@ -126,10 +126,10 @@ func resolveGoType(table string, c columnInfo, typeMapping, fieldMapping map[str
 func buildBunTag(c columnInfo) string {
 	parts := []string{c.Name}
 
-	// 主键
+	// 主键（自增列直接标注 autoincrement，无需判断默认值）
 	if c.IsPrimary {
 		parts = append(parts, "pk")
-		if c.HasDefault && isAutoIncrement(c.DefaultValue) {
+		if c.AutoIncrement {
 			parts = append(parts, "autoincrement")
 		}
 	}
@@ -203,12 +203,6 @@ func bunSQLType(c columnInfo) string {
 	default:
 		return ""
 	}
-}
-
-// isAutoIncrement 判断默认值是否为自增序列。
-func isAutoIncrement(defVal string) bool {
-	d := strings.ToLower(defVal)
-	return strings.Contains(d, "nextval(") || strings.Contains(d, "generated")
 }
 
 // cleanDefault 清理默认值表达式，去除类型转换后缀。
