@@ -12,7 +12,7 @@ import (
 	"github.com/cyjaysong/renhe/os/rlog"
 	"github.com/cyjaysong/renhe/os/rotrace"
 	"github.com/cyjaysong/renhe/util/rvalid"
-	echootel "github.com/labstack/echo-opentelemetry"
+	echootel "github.com/labstack/echo-otel/v5"
 	"github.com/labstack/echo/v5"
 )
 
