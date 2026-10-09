@@ -2,6 +2,7 @@ package rdb
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/uptrace/bun"
 )
@@ -20,18 +21,19 @@ func TxFromContext(ctx context.Context) (bun.Tx, bool) {
 	return tx, ok
 }
 
-// Reader 返回读操作目标：事务中返回事务，否则返回从库。
-func (d *DB) Reader(ctx context.Context) bun.IDB {
-	if tx, ok := TxFromContext(ctx); ok {
-		return tx
+// --- Transaction operations → always master ---
+
+// BeginTx 开启事务并将其注入返回的 context，后续操作自动路由到事务。
+func (d *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (tx bun.Tx, ctxWithTx context.Context, err error) {
+	if tx, err = d.Writer(ctx).BeginTx(ctx, opts); err == nil {
+		return tx, WithTx(ctx, tx), nil
 	}
-	return d.Slave()
+	return tx, ctx, err
 }
 
-// Writer 返回写操作目标：事务中返回事务，否则返回主库。
-func (d *DB) Writer(ctx context.Context) bun.IDB {
-	if tx, ok := TxFromContext(ctx); ok {
-		return tx
-	}
-	return d.master
+// RunInTx 在事务中执行 fn，fn 收到的 ctx 已注入事务。fn 返回 error 时自动回滚，否则提交。
+func (d *DB) RunInTx(ctx context.Context, opts *sql.TxOptions, fn func(ctx context.Context, tx bun.Tx) error) error {
+	return d.Writer(ctx).RunInTx(ctx, opts, func(ctx context.Context, tx bun.Tx) error {
+		return fn(WithTx(ctx, tx), tx)
+	})
 }
