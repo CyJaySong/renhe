@@ -1,7 +1,7 @@
 package custom
 
 import (
-	emoji "github.com/Andrew-M-C/go.emoji"
+	emoji "github.com/forPelevin/gomoji"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 )
@@ -29,11 +29,5 @@ func validateNoEmoji(fl validator.FieldLevel) bool {
 	if len(s) == 0 {
 		return true
 	}
-	it := emoji.IterateChars(s)
-	for it.Next() {
-		if it.CurrentIsEmoji() {
-			return false
-		}
-	}
-	return true
+	return !emoji.ContainsEmoji(s)
 }

@@ -58,7 +58,7 @@ func RegisterDigitsValidation(v *validator.Validate, zhTrans ut.Translator) (err
 //   - digits=.2    不限整数位，小数部分最多2位
 //   - digits=10.   整数部分最多10位，不限小数位
 //   - digits=10    整数部分最多10位，不限小数位（同上）
-//   - digits=0.2   整数部分为0（仅允许 0.xx 形式）
+//   - digits=0.2   整数部分为0，小数部分最多2位
 //   - digits=2.0   小数部分为0（仅允许整数形式）
 //
 // 支持类型: float32、float64、int 系列（自定义类型经 CustomTypeFunc 转为底层数值类型后同样适用）

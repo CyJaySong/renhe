@@ -9,9 +9,9 @@ require (
 )
 
 require (
-	github.com/Andrew-M-C/go.emoji v1.1.4 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/forPelevin/gomoji v1.4.1 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.15 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
@@ -34,6 +34,7 @@ require (
 	github.com/redis/go-redis/extra/rediscmd/v9 v9.23.0 // indirect
 	github.com/redis/go-redis/extra/redisotel/v9 v9.23.0 // indirect
 	github.com/redis/go-redis/v9 v9.23.0 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/shopspring/decimal v1.5.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
@@ -75,10 +76,4 @@ require (
 replace (
 	github.com/cyjaysong/renhe => ../
 	github.com/go-playground/validator/v10 => /Volumes/Project/GoProject/go-validator
-)
-
-// 避免旧 monorepo genproto 与 googleapis/* 拆分模块路径冲突
-exclude (
-	google.golang.org/genproto v0.0.0-20210402141018-6c239bbf2bb1
-	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 )
